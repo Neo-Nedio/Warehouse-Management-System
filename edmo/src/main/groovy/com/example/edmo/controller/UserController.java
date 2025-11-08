@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.edmo.Jwt.JwtUtil;
 import com.example.edmo.entity.DTO.QueryPage;
 import com.example.edmo.entity.DTO.LoginRequest;
+import com.example.edmo.entity.DTO.QueryUser;
 import com.example.edmo.entity.User;
 import com.example.edmo.service.UserService;
 import jakarta.annotation.Resource;
@@ -11,7 +12,6 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 
@@ -73,6 +73,35 @@ public class UserController {
         return sendToken(user);
     }
 
+    @PostMapping("/updatePassword")
+    public Result updatePassword(@RequestBody LoginRequest loginRequest,
+                                 HttpSession session) {
+        String email = loginRequest.getEmail();
+        int code = loginRequest.getCode();
+
+        // === 关键：安全地获取 Session 属性 ===
+        if (session.getAttribute("code") == null ||  session.getAttribute("email") == null) {
+            return Result.fail("请先获取验证码");
+        }
+
+
+        int sessionCode = (int) session.getAttribute("code");
+        String sessionEmail = (String) session.getAttribute("email");
+
+        if(sessionCode == 0) return Result.fail("请先获取验证码");
+
+
+        if(code!=sessionCode) return Result.fail("验证码错误");
+        if(!email.equals(sessionEmail)) return Result.fail("请先获取验证码");
+
+        String password = loginRequest.getPassword();
+        User user=userService.findUserByEmail(loginRequest);
+        user.setPassword(password);
+        mod(new QueryUser(user));
+        return Result.success();
+    }
+
+
     private Result sendToken(User user){
         // 生成token
         String token = JwtUtil.createToken(user);
@@ -90,8 +119,8 @@ public class UserController {
 
     //普通权限
     @PostMapping("/findByNameLike")
-    public List<User> nameLike(@RequestParam String name) {
-        return userService.findUsersByNameLike(name);
+    public Result nameLike(@RequestParam String name) {
+        return Result.success(userService.findUsersByNameLike(name));
     }
 
     @PostMapping("/listPage")
@@ -100,28 +129,52 @@ public class UserController {
         return Result.success(page.getTotal(),page.getRecords());
     }
 
+    @PostMapping("/findById")
+    public Result findById(@RequestParam Integer id) {
+        return Result.success(userService.getById(id));
+    }
+
     //管理员权限
     @PostMapping("/save")
-    public Result save(@RequestBody User user) {
-        userService.save(user);
-        return Result.success();
+    public Result save(@RequestBody QueryUser  queryUser) {
+        try {
+            User user = new User(queryUser);
+            if (userService.save(user)) {
+                return Result.success();
+            } else {
+                return Result.fail("保存失败");
+            }
+        } catch (Exception e) {
+            return Result.fail("保存失败");
+        }
     }
 
     @PostMapping("/mod")
-    public Result mod(@RequestBody User user) {
-        userService.updateById(user);
-        return Result.success();
+    public Result mod(@RequestBody QueryUser  queryUser) {
+        try {
+            User user = new User(queryUser,queryUser.getId());
+            if (userService.updateById(user)) {
+                return Result.success();
+            } else {
+                return Result.fail("修改失败");
+            }
+        } catch (Exception e) {
+            return Result.fail("修改失败");
+        }
     }
 
-    @PostMapping("/saveOrMod")
-    public Result saveOrMod(@RequestBody User user) {
-        userService.saveOrUpdate(user);
-        return Result.success();
-    }
 
     @PostMapping("/delete")
-    public boolean delete(@RequestParam Integer id) {
-        return userService.removeById(id);
+    public Result delete(@RequestParam Integer id) {
+        try {
+            if (userService.removeById(id))  {
+                return Result.success();
+            } else {
+                return Result.fail("删除失败");
+            }
+        } catch (Exception e) {
+            return Result.fail("删除失败");
+        }
     }
 
 }

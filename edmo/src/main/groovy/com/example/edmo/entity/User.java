@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.example.edmo.entity.DTO.QueryUser;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,7 +26,7 @@ public class User {
     private String email;
 
     @TableField("password")
-    @JsonIgnore
+    @JsonIgnore  // 输出时忽略（对象→JSON）
     private String password;
 
     @TableField("sex")
@@ -37,4 +38,23 @@ public class User {
     @TableField("roleId")
     private Integer roleId;
 
+    public User(QueryUser queryUser) {
+        this.name = queryUser.getName();
+        this.email = queryUser.getEmail();
+        this.password = queryUser.getPassword();
+        this.sex=queryUser.getSex();
+        this.age=queryUser.getAge();
+        this.roleId=queryUser.getRoleId();
+    }
+
+    //用于需要传入id
+    public User(QueryUser queryUser,Integer id) {
+        this.name = queryUser.getName();
+        this.email = queryUser.getEmail();
+        this.password = queryUser.getPassword();
+        this.sex=queryUser.getSex();
+        this.age=queryUser.getAge();
+        this.roleId=queryUser.getRoleId();
+        this.id=id;
+    }
 }

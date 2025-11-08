@@ -24,7 +24,8 @@ public class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/user/code",
                         "/user/loginByPassword",
-                        "/user/loginByCode"
+                        "/user/loginByCode",
+                        "/user/updatePassword"
                 );
 
 
@@ -34,7 +35,8 @@ public class WebConfig implements WebMvcConfigurer {
                 .excludePathPatterns(
                         "/user/code",
                         "/user/loginByPassword",
-                        "/user/loginByCode"
+                        "/user/loginByCode",
+                        "/user/updatePassword"
                 );
 
     }
