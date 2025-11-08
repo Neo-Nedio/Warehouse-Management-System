@@ -9,15 +9,42 @@ import com.example.edmo.entity.DTO.LoginRequest;
 import com.example.edmo.entity.User;
 import com.example.edmo.mapper.UserMapper;
 import jakarta.annotation.Resource;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Random;
 
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
     @Resource
     private UserMapper userMapper;
 
+    @Resource
+    JavaMailSender sender;
+
+
+    @Override
+    public int CreatCode(LoginRequest loginRequest) {
+        if(findUserByEmail( loginRequest)==null) return 0;
+
+        String email = loginRequest.getEmail();
+
+        Random random = new Random();
+        int code = random.nextInt(900000)+100000;
+        SimpleMailMessage message = new SimpleMailMessage();
+        //设置邮件标题
+        message.setSubject("验证码");
+        //设置邮件内容
+        message.setText("验证码是"+code);
+        //设置邮件发送给谁，可以多个，这里就发给你的QQ邮箱
+        message.setTo(email);
+        //邮件发送者，这里要与配置文件中的保持一致
+        message.setFrom("18276593770@163.com");
+        sender.send(message);
+        return code;
+    }
 
     @Override
     public List<User> findUsersByNameLike(String name) {
@@ -45,11 +72,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public User findUserByEmailAndPassword(LoginRequest loginRequest) {
+    public User findUserByEmail(LoginRequest loginRequest) {
         QueryWrapper<User> wrapper=Wrappers
                 .<User>query()
-                .eq("email",loginRequest.getEmail())
-                .eq("password",loginRequest.getPassword());
+                .eq("email",loginRequest.getEmail());
         return userMapper.selectOne(wrapper);
     }
 }

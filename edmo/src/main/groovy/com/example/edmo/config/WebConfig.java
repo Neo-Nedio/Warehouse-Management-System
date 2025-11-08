@@ -15,15 +15,27 @@ public class WebConfig implements WebMvcConfigurer {
     @Resource
     private UserPermissionInterceptor userPermissionInterceptor;
 
+
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(simpleJwtInterceptor)
-                .addPathPatterns("/**");// 拦截所有路径
+                .addPathPatterns("/**")// 拦截所有路径
+                .excludePathPatterns(
+                        "/user/code",
+                        "/user/loginByPassword",
+                        "/user/loginByCode"
+                );
+
 
         // 第二层：User路径权限检查
         registry.addInterceptor(userPermissionInterceptor)
                 .addPathPatterns("/user/**")
-                .excludePathPatterns("/user/login");
+                .excludePathPatterns(
+                        "/user/code",
+                        "/user/loginByPassword",
+                        "/user/loginByCode"
+                );
 
     }
 

@@ -10,4 +10,5 @@ import org.springframework.context.annotation.Configuration;
 public class LoginRequest {
     private String email;
     private String password;
+    private int code;
 }

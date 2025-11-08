@@ -24,10 +24,7 @@ public class SimpleJwtInterceptor implements HandlerInterceptor {
         // 先清理线程数据
         UserContext.clear();
 
-        // 放行登录接口
-        if (request.getRequestURI().contains("/user/login")) {
-            return true;
-        }
+
 
         // 获取token
         String token = request.getHeader("token");

@@ -12,9 +12,11 @@ import java.util.List;
 
 @Service
 public interface UserService extends IService<User> {
+    int CreatCode(LoginRequest loginRequest);
+
     List<User> findUsersByNameLike(String name);
 
     Page<User> findUsersByNameLike(QueryPage queryPage);
 
-    User findUserByEmailAndPassword(LoginRequest loginRequest);
+    User findUserByEmail(LoginRequest loginRequest);
 }
