@@ -69,7 +69,6 @@ public class UserController {
     @PostMapping("/listPage")
     public Result listPage(@RequestBody QueryPage queryPage) {
         Page<User> page=userService.findUsersByNameLike(queryPage);
-
         return Result.success(page.getTotal(),page.getRecords());
     }
 }

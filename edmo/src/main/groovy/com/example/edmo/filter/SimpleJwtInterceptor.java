@@ -32,22 +32,15 @@ public class SimpleJwtInterceptor implements HandlerInterceptor {
         // 获取token
         String token = request.getHeader("token");
         if (token == null ) {
-            // 设置字符编码 BEFORE 写入内容
-            response.setCharacterEncoding("UTF-8");
-            response.setContentType("application/json;charset=UTF-8");
-            response.setStatus(401);
-            response.getWriter().write("{\"code\":401,\"message\":\"请先登录\"}");
+            SendError.Error(response,401,"请先登录");
             return false;
         }
 
 
         // 验证token
         if (!JwtUtil.verifyToken(token)) {
-            // 设置字符编码 BEFORE 写入内容
-            response.setCharacterEncoding("UTF-8");
-            response.setContentType("application/json;charset=UTF-8");
-            response.setStatus(401);
-            response.getWriter().write("{\"code\":401,\"message\":\"Token无效\"}");
+
+            SendError.Error(response,401,"token无效");
             return false;
         }
 
@@ -61,8 +54,7 @@ public class SimpleJwtInterceptor implements HandlerInterceptor {
             }
         }
 
-        response.setStatus(401);
-        response.getWriter().write("{\"code\":401,\"message\":\"用户不存在\"}");
+        SendError.Error(response,401,"用户不存在");
         return false;
     }
 
