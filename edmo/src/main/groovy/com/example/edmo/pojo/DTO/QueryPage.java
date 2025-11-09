@@ -1,4 +1,4 @@
-package com.example.edmo.entity.DTO;
+package com.example.edmo.pojo.DTO;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

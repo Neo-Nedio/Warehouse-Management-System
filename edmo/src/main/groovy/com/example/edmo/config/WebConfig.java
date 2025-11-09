@@ -1,7 +1,8 @@
 package com.example.edmo.config;
 
-import com.example.edmo.filter.SimpleJwtInterceptor;
-import com.example.edmo.filter.UserPermissionInterceptor;
+import com.example.edmo.interceptor.FirstInterceptor;
+import com.example.edmo.interceptor.UserPermissionInterceptor;
+import com.example.edmo.interceptor.WarehouseAdminInterceptor;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -10,16 +11,17 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
     @Resource
-    private SimpleJwtInterceptor simpleJwtInterceptor;
+    private FirstInterceptor firstInterceptor;
 
     @Resource
     private UserPermissionInterceptor userPermissionInterceptor;
 
-
+    @Resource
+    private WarehouseAdminInterceptor warehouseAdminInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(simpleJwtInterceptor)
+        registry.addInterceptor(firstInterceptor)
                 .addPathPatterns("/**")// 拦截所有路径
                 .excludePathPatterns(
                         "/user/code",
@@ -38,7 +40,9 @@ public class WebConfig implements WebMvcConfigurer {
                         "/user/loginByCode",
                         "/user/updatePassword"
                 );
-
+        // 第三层：warehouseAdmin路径权限检查
+        registry.addInterceptor(warehouseAdminInterceptor)
+                .addPathPatterns("/warehouse/admin/**");
     }
 
 

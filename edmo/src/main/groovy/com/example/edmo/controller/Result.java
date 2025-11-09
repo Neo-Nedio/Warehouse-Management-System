@@ -6,30 +6,31 @@ import lombok.Data;
 public class Result {
     int code;
     String msg;
-    long total;
     Object data;
+    private Long timestamp;
 
-    private static Result result(int code, String msg,long total, Object data) {
+    public Result() {
+        this.timestamp = System.currentTimeMillis();
+    }
+
+    private static Result result(int code, String msg, Object data) {
         Result result = new Result();
         result.code = code;
         result.msg = msg;
-        result.total=total;
         result.data = data;
         return result;
     }
 
-   public static Result success(long total, Object data) {
-        return  result(200,"success",total,data);
-   }
+
    public static Result success(Object data ) {
-        return  result(200,"success", 0,data);
+        return  result(200,"success", data);
    }
 
     public static Result success( ) {
-        return  result(200,"success", 0,null);
+        return  result(200,"success", null);
     }
 
-   public static Result fail(String msg) {return result(500, msg,0,null);}
+   public static Result fail(int code,String msg) {return result(code, msg,null);}
 
 
 }

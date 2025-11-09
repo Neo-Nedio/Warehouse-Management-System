@@ -1,7 +1,7 @@
-package com.example.edmo.entity.DTO;
+package com.example.edmo.pojo.DTO;
 
 
-import com.example.edmo.entity.User;
+import com.example.edmo.pojo.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

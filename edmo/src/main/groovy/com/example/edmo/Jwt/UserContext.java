@@ -1,6 +1,6 @@
 package com.example.edmo.Jwt;
 
-import com.example.edmo.entity.User;
+import com.example.edmo.pojo.entity.User;
 
 public class UserContext {
     private static final ThreadLocal<User> currentUser = new ThreadLocal<>();

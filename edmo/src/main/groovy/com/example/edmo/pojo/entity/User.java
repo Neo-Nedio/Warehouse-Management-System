@@ -1,10 +1,10 @@
-package com.example.edmo.entity;
+package com.example.edmo.pojo.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.example.edmo.entity.DTO.QueryUser;
+import com.example.edmo.pojo.DTO.QueryUser;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -38,6 +38,7 @@ public class User {
     @TableField("roleId")
     private Integer roleId;
 
+    //queryUser 封装来把密码放入User中，直接传User会导致密码没有被实例化
     public User(QueryUser queryUser) {
         this.name = queryUser.getName();
         this.email = queryUser.getEmail();

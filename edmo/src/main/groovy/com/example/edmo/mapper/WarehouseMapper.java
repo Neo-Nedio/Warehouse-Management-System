@@ -1,9 +1,9 @@
 package com.example.edmo.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.example.edmo.pojo.entity.User;
+import com.example.edmo.pojo.entity.Warehouse;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface UserMapper extends BaseMapper<User> {
+public interface WarehouseMapper extends BaseMapper<Warehouse> {
 }

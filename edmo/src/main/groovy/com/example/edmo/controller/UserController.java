@@ -1,11 +1,14 @@
 package com.example.edmo.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.edmo.Constant.CodeConstant;
+import com.example.edmo.Constant.UserConstant;
 import com.example.edmo.Jwt.JwtUtil;
-import com.example.edmo.entity.DTO.QueryPage;
-import com.example.edmo.entity.DTO.LoginRequest;
-import com.example.edmo.entity.DTO.QueryUser;
-import com.example.edmo.entity.User;
+import com.example.edmo.pojo.DTO.QueryPage;
+import com.example.edmo.pojo.DTO.LoginRequest;
+import com.example.edmo.pojo.DTO.QueryUser;
+import com.example.edmo.pojo.entity.User;
+import com.example.edmo.exception.UserException;
 import com.example.edmo.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpSession;
@@ -28,7 +31,7 @@ public class UserController {
         String email = loginRequest.getEmail();
 
         int code=userService.CreatCode(loginRequest);
-        if(code==0) Result.fail("邮箱不存在");
+        if(code==0) throw new UserException(CodeConstant.user,UserConstant.NULL_USER);
 
         Session.setAttribute("email",email);
         Session.setAttribute("code",code);
@@ -41,7 +44,7 @@ public class UserController {
         // 根据邮箱查找用户
         User user=userService.findUserByEmail(loginRequest);
         if (user == null || !user.getPassword().equals(loginRequest.getPassword()))
-            return Result.fail("邮箱或密码错误");
+            throw new UserException(CodeConstant.user,UserConstant.FALSE_EMAIL_OR_PASSWORD);
 
 
         return sendToken(user);
@@ -56,20 +59,18 @@ public class UserController {
 
         // === 关键：安全地获取 Session 属性 ===
         if (session.getAttribute("code") == null ||  session.getAttribute("email") == null) {
-            return Result.fail("请先获取验证码");
+            throw new UserException(CodeConstant.user,UserConstant.NEED_CODE);
         }
 
 
         int sessionCode = (int) session.getAttribute("code");
         String sessionEmail = (String) session.getAttribute("email");
 
-        if(sessionCode == 0) return Result.fail("请先获取验证码");
 
+        if(code!=sessionCode) throw new UserException(CodeConstant.user,UserConstant.FALSE_CODE);
+        if(!email.equals(sessionEmail)) throw new UserException(CodeConstant.user,UserConstant.NEED_CODE);
 
-        if(code!=sessionCode) return Result.fail("验证码错误");
-        if(!email.equals(sessionEmail)) return Result.fail("请先获取验证码");
-
-        User user=userService.findUserByEmail(loginRequest);//获取验证码时已经检验
+        User user=userService.findUserByEmail(loginRequest);//获取验证码时已经检验用户是否存在
         return sendToken(user);
     }
 
@@ -81,18 +82,16 @@ public class UserController {
 
         // === 关键：安全地获取 Session 属性 ===
         if (session.getAttribute("code") == null ||  session.getAttribute("email") == null) {
-            return Result.fail("请先获取验证码");
+            throw new UserException(CodeConstant.user,UserConstant.NEED_CODE);
         }
 
 
         int sessionCode = (int) session.getAttribute("code");
         String sessionEmail = (String) session.getAttribute("email");
 
-        if(sessionCode == 0) return Result.fail("请先获取验证码");
 
-
-        if(code!=sessionCode) return Result.fail("验证码错误");
-        if(!email.equals(sessionEmail)) return Result.fail("请先获取验证码");
+        if(code!=sessionCode) throw new UserException(CodeConstant.user,UserConstant.FALSE_CODE);
+        if(!email.equals(sessionEmail)) throw new UserException(CodeConstant.user,UserConstant.NEED_CODE);
 
         String password = loginRequest.getPassword();
         User user=userService.findUserByEmail(loginRequest);
@@ -111,7 +110,7 @@ public class UserController {
         result.put("user", user);
         result.put("token", token);
 
-        return Result.success(1,result);
+        return Result.success(result);
     }
 
 
@@ -126,7 +125,7 @@ public class UserController {
     @PostMapping("/listPage")
     public Result listPage(@RequestBody QueryPage queryPage) {
         Page<User> page=userService.findUsersByNameLike(queryPage);
-        return Result.success(page.getTotal(),page.getRecords());
+        return Result.success(page.getRecords());
     }
 
     @PostMapping("/findById")
@@ -141,11 +140,12 @@ public class UserController {
             User user = new User(queryUser);
             if (userService.save(user)) {
                 return Result.success();
-            } else {
-                return Result.fail("保存失败");
+            } else
+            {
+                throw new UserException(CodeConstant.user,UserConstant.FALSE_SAVE);
             }
         } catch (Exception e) {
-            return Result.fail("保存失败");
+            throw new UserException(CodeConstant.user,UserConstant.FALSE_SAVE);
         }
     }
 
@@ -156,10 +156,10 @@ public class UserController {
             if (userService.updateById(user)) {
                 return Result.success();
             } else {
-                return Result.fail("修改失败");
+                throw new UserException(CodeConstant.user,UserConstant.FALSE_MOD);
             }
         } catch (Exception e) {
-            return Result.fail("修改失败");
+            throw new UserException(CodeConstant.user,UserConstant.FALSE_MOD);
         }
     }
 
@@ -170,10 +170,10 @@ public class UserController {
             if (userService.removeById(id))  {
                 return Result.success();
             } else {
-                return Result.fail("删除失败");
+                throw new UserException(CodeConstant.user,UserConstant.FALSE_DELETE);
             }
         } catch (Exception e) {
-            return Result.fail("删除失败");
+            throw new UserException(CodeConstant.user,UserConstant.FALSE_DELETE);
         }
     }
 
