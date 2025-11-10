@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.example.edmo.pojo.DTO.QueryWarehouse;
+import com.example.edmo.pojo.DTO.WarehouseDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,9 +23,9 @@ public class Warehouse {
     @TableField("description")
     private String description;
 
-    public Warehouse(QueryWarehouse queryWarehouse) {
-        this.id = queryWarehouse.getId();
-        this.name = queryWarehouse.getName();
-        this.description = queryWarehouse.getDescription();
+    public Warehouse(WarehouseDTO warehouseDTO) {
+        this.id = warehouseDTO.getId();
+        this.name = warehouseDTO.getName();
+        this.description = warehouseDTO.getDescription();
     }
 }

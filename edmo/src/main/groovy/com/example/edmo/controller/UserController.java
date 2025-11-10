@@ -6,10 +6,11 @@ import com.example.edmo.Constant.UserConstant;
 import com.example.edmo.Jwt.JwtUtil;
 import com.example.edmo.pojo.DTO.QueryPage;
 import com.example.edmo.pojo.DTO.LoginRequest;
-import com.example.edmo.pojo.DTO.QueryUser;
+import com.example.edmo.pojo.DTO.UserDTO;
 import com.example.edmo.pojo.entity.User;
 import com.example.edmo.exception.UserException;
 import com.example.edmo.service.UserService;
+import com.example.edmo.service.WarehouseUserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,9 @@ import java.util.Map;
 public class UserController {
     @Resource
     private UserService userService;
+
+    @Resource
+    private WarehouseUserService warehouseUserService;
 
     @PostMapping("/code")
     public Result createCode(@RequestBody LoginRequest loginRequest,
@@ -96,7 +100,7 @@ public class UserController {
         String password = loginRequest.getPassword();
         User user=userService.findUserByEmail(loginRequest);
         user.setPassword(password);
-        mod(new QueryUser(user));
+        mod(new UserDTO(user));
         return Result.success();
     }
 
@@ -109,7 +113,6 @@ public class UserController {
         Map<String, Object> result = new HashMap<>();
         result.put("user", user);
         result.put("token", token);
-
         return Result.success(result);
     }
 
@@ -135,9 +138,9 @@ public class UserController {
 
     //管理员权限
     @PostMapping("/save")
-    public Result save(@RequestBody QueryUser  queryUser) {
+    public Result save(@RequestBody UserDTO userDTO) {
         try {
-            User user = new User(queryUser);
+            User user = new User(userDTO);
             if (userService.save(user)) {
                 return Result.success();
             } else
@@ -150,9 +153,9 @@ public class UserController {
     }
 
     @PostMapping("/mod")
-    public Result mod(@RequestBody QueryUser  queryUser) {
+    public Result mod(@RequestBody UserDTO userDTO) {
         try {
-            User user = new User(queryUser,queryUser.getId());
+            User user = new User(userDTO, userDTO.getId());
             if (userService.updateById(user)) {
                 return Result.success();
             } else {

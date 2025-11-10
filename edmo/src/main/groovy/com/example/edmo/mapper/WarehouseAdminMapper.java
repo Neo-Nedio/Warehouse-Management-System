@@ -5,5 +5,5 @@ import com.example.edmo.pojo.entity.Warehouse;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface WarehouseMapper extends BaseMapper<Warehouse> {
+public interface WarehouseAdminMapper extends BaseMapper<Warehouse> {
 }

@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class QueryWarehouse {
+public class WarehouseDTO {
     private Integer id;
 
     private String name;

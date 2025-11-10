@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class QueryUser {
+public class UserDTO {
 
     private Integer id;
 
@@ -25,7 +25,7 @@ public class QueryUser {
 
     private Integer roleId;
 
-    public QueryUser(User queryUser) {
+    public UserDTO(User queryUser) {
         this.name = queryUser.getName();
         this.email = queryUser.getEmail();
         this.password = queryUser.getPassword();

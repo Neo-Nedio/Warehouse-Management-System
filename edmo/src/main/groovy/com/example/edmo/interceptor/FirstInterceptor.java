@@ -8,6 +8,7 @@ import com.example.edmo.pojo.entity.User;
 import com.example.edmo.exception.BaseException;
 import com.example.edmo.exception.JwtException;
 import com.example.edmo.service.UserService;
+import com.example.edmo.service.WarehouseUserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -19,6 +20,9 @@ public class FirstInterceptor implements HandlerInterceptor {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private WarehouseUserService warehouseUserService;
 
     @Override
     public boolean preHandle(HttpServletRequest request,
@@ -42,10 +46,13 @@ public class FirstInterceptor implements HandlerInterceptor {
             if (userId != null) {
                 User user = userService.getById(userId);
                 if (user != null) {
+                    user.setManagedWarehouseIds(warehouseUserService.findWarehouseIdByUserId(userId));
                     UserContext.setCurrentUser(user);
                     return true;
                 }
             }
+
+
 
             throw new JwtException(CodeConstant.token,JwtConstant.NULL_USER);
         } catch (Exception e) {
