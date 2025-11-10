@@ -40,6 +40,7 @@ public class WebConfig implements WebMvcConfigurer {
                         "/user/loginByCode",
                         "/user/updatePassword"
                 );
+
         // 第三层：warehouseAdmin路径权限检查
         registry.addInterceptor(warehouseAdminInterceptor)
                 .addPathPatterns("/warehouse/admin/**");

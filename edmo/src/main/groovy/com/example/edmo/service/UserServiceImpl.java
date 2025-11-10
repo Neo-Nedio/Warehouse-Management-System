@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.edmo.pojo.DTO.QueryPage;
+import com.example.edmo.pojo.DTO.PageDTO;
 import com.example.edmo.pojo.DTO.LoginRequest;
 import com.example.edmo.pojo.entity.User;
 import com.example.edmo.mapper.UserMapper;
@@ -56,8 +56,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public Page<User> findUsersByNameLike(QueryPage queryPage) {
-        String name=(String) queryPage.getParam().get("name");
+    public Page<User> findUsersByNameLike(PageDTO pageDTO) {
+        String name=(String) pageDTO.getParam().get("name");
 
         QueryWrapper<User> wrapper = Wrappers
                 .<User>query()
@@ -65,8 +65,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .orderByDesc("id");
 
         Page<User> page=new Page<>();
-        page.setSize(queryPage.getPageSize());
-        page.setCurrent(queryPage.getPageNum());
+        page.setSize(pageDTO.getPageSize());
+        page.setCurrent(pageDTO.getPageNum());
 
         return userMapper.selectPage(page,wrapper);
     }
@@ -77,5 +77,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .<User>query()
                 .eq("email",loginRequest.getEmail());
         return userMapper.selectOne(wrapper);
+    }
+
+    @Override
+    public List<User> findUsersByIds(List<Integer> ids) {
+        QueryWrapper<User> wrapper = Wrappers
+                .<User>query()
+                .in("id", ids)
+                .orderByDesc("id");
+        return userMapper.selectList(wrapper);
     }
 }

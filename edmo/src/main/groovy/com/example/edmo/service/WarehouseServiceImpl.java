@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.edmo.mapper.WarehouseAdminMapper;
-import com.example.edmo.pojo.DTO.QueryPage;
+import com.example.edmo.pojo.DTO.PageDTO;
 import com.example.edmo.pojo.entity.Warehouse;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -13,11 +13,11 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class WarehouseAdminServiceImpl extends ServiceImpl<WarehouseAdminMapper, Warehouse> implements WarehouseAdminService {
+public class WarehouseServiceImpl extends ServiceImpl<WarehouseAdminMapper, Warehouse> implements WarehouseService {
     @Resource
     WarehouseAdminMapper warehouseAdminMapper;
     @Override
-    public List<Warehouse> findUsersByNameLike(String name) {
+    public List<Warehouse> findWarehousesByNameLike(String name) {
         QueryWrapper<Warehouse> wrapper = Wrappers
                 .<Warehouse>query()
                 .like("name",name)
@@ -26,8 +26,8 @@ public class WarehouseAdminServiceImpl extends ServiceImpl<WarehouseAdminMapper,
     }
 
     @Override
-    public Page<Warehouse> findUsersByNameLike(QueryPage queryPage) {
-        String name=(String) queryPage.getParam().get("name");
+    public Page<Warehouse> findWarehousesByNameLike(PageDTO pageDTO) {
+        String name=(String) pageDTO.getParam().get("name");
 
         QueryWrapper<Warehouse> wrapper = Wrappers
                 .<Warehouse>query()
@@ -35,9 +35,19 @@ public class WarehouseAdminServiceImpl extends ServiceImpl<WarehouseAdminMapper,
                 .orderByDesc("id");
 
         Page<Warehouse> page=new Page<>();
-        page.setSize(queryPage.getPageSize());
-        page.setCurrent(queryPage.getPageNum());
+        page.setSize(pageDTO.getPageSize());
+        page.setCurrent(pageDTO.getPageNum());
 
         return warehouseAdminMapper.selectPage(page,wrapper);
+    }
+
+    @Override
+    public List<Warehouse> findWarehousesById(List<Integer> ids) {
+        QueryWrapper<Warehouse> wrapper=Wrappers
+                .<Warehouse>query()
+                //列表用in
+                .in("id",ids)
+                .orderByDesc("id");
+        return warehouseAdminMapper.selectList(wrapper);
     }
 }

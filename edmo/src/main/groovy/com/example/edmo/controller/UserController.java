@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.edmo.Constant.CodeConstant;
 import com.example.edmo.Constant.UserConstant;
 import com.example.edmo.Jwt.JwtUtil;
-import com.example.edmo.pojo.DTO.QueryPage;
+import com.example.edmo.pojo.DTO.PageDTO;
 import com.example.edmo.pojo.DTO.LoginRequest;
 import com.example.edmo.pojo.DTO.UserDTO;
 import com.example.edmo.pojo.entity.User;
@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -26,7 +27,7 @@ public class UserController {
     private UserService userService;
 
     @Resource
-    private WarehouseUserService warehouseUserService;
+    WarehouseUserService warehouseUserService;
 
     @PostMapping("/code")
     public Result createCode(@RequestBody LoginRequest loginRequest,
@@ -126,8 +127,8 @@ public class UserController {
     }
 
     @PostMapping("/listPage")
-    public Result listPage(@RequestBody QueryPage queryPage) {
-        Page<User> page=userService.findUsersByNameLike(queryPage);
+    public Result listPage(@RequestBody PageDTO pageDTO) {
+        Page<User> page=userService.findUsersByNameLike(pageDTO);
         return Result.success(page.getRecords());
     }
 

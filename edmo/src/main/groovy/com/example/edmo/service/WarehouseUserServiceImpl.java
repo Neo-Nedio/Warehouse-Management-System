@@ -1,10 +1,8 @@
 package com.example.edmo.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.edmo.mapper.WarehouseUserMapper;
-import com.example.edmo.pojo.DTO.WarehouseAndUserDTO;
 import com.example.edmo.pojo.entity.WarehouseAndUser;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -16,15 +14,6 @@ import java.util.stream.Collectors;
 public class WarehouseUserServiceImpl extends ServiceImpl<WarehouseUserMapper, WarehouseAndUser> implements WarehouseUserService {
     @Resource
     private WarehouseUserMapper warehouseUserMapper;
-
-    @Override
-    public WarehouseAndUser findUserByWarehouseAndUser(WarehouseAndUserDTO warehouseAndUserDTO) {
-        QueryWrapper<WarehouseAndUser> Wrapper = Wrappers
-                .<WarehouseAndUser>query()
-                .eq("warehouse_id",warehouseAndUserDTO.getWarehouseId())
-                .eq("user_id",warehouseAndUserDTO.getUserId());
-        return warehouseUserMapper.selectOne(Wrapper);
-    }
 
     //用来查找用户可以管理的仓库
     //TODO 学习 流
@@ -40,5 +29,18 @@ public class WarehouseUserServiceImpl extends ServiceImpl<WarehouseUserMapper, W
                 .map(obj -> (Integer) obj)
                 .collect(Collectors.toList());
 
+    }
+
+    @Override
+    public List<Integer> findUserIdByWarehouseId(Integer warehouseId) {
+        QueryWrapper<WarehouseAndUser> wrapper = new QueryWrapper<>();
+        wrapper.select("user_id")
+                .eq("warehouse_id", warehouseId);
+
+        // selectObjs 返回 List<Object>，转换为 Integer
+        List<Object> objects = warehouseUserMapper.selectObjs(wrapper);
+        return objects.stream()
+                .map(obj -> (Integer) obj)
+                .collect(Collectors.toList());
     }
 }

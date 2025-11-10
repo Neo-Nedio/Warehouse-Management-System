@@ -9,7 +9,7 @@ import java.util.HashMap;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class QueryPage {
+public class PageDTO {
     static int page_Size = 20;
     static int page_Num = 1;
 
