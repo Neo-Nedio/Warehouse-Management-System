@@ -12,4 +12,8 @@ public interface WarehouseUserService extends IService<WarehouseAndUser> {
     List<Integer> findWarehouseIdByUserId(Integer userId);
 
     List<Integer> findUserIdByWarehouseId(Integer warehouseId);
+
+    boolean deleteByWarehouseIdAndUserId(Integer warehouseId, Integer userId);
+
+    WarehouseAndUser findRelationByWarehouseIdAndUserId(Integer warehouseId, Integer userId);
 }

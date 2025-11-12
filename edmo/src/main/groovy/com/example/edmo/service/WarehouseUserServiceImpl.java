@@ -1,6 +1,7 @@
 package com.example.edmo.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.edmo.mapper.WarehouseUserMapper;
 import com.example.edmo.pojo.entity.WarehouseAndUser;
@@ -42,5 +43,23 @@ public class WarehouseUserServiceImpl extends ServiceImpl<WarehouseUserMapper, W
         return objects.stream()
                 .map(obj -> (Integer) obj)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean deleteByWarehouseIdAndUserId(Integer warehouseId, Integer userId) {
+        QueryWrapper<WarehouseAndUser> wrapper = Wrappers
+                .<WarehouseAndUser>query()
+                .eq("warehouse_id", warehouseId)
+                .eq("user_id", userId);
+        return warehouseUserMapper.delete(wrapper) > 0;
+    }
+
+    @Override
+    public WarehouseAndUser findRelationByWarehouseIdAndUserId(Integer warehouseId, Integer userId) {
+        QueryWrapper<WarehouseAndUser> wrapper = Wrappers
+                .<WarehouseAndUser>query()
+                .eq("warehouse_id", warehouseId)
+                .eq("user_id", userId);
+        return warehouseUserMapper.selectOne(wrapper);
     }
 }

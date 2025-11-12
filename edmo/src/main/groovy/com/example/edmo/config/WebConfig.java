@@ -3,6 +3,7 @@ package com.example.edmo.config;
 import com.example.edmo.interceptor.FirstInterceptor;
 import com.example.edmo.interceptor.UserPermissionInterceptor;
 import com.example.edmo.interceptor.WarehouseAdminInterceptor;
+import com.example.edmo.interceptor.goodsInterceptor;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -18,6 +19,9 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Resource
     private WarehouseAdminInterceptor warehouseAdminInterceptor;
+
+    @Resource
+    private goodsInterceptor goodsInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
@@ -44,6 +48,9 @@ public class WebConfig implements WebMvcConfigurer {
         // 第三层：warehouseAdmin路径权限检查
         registry.addInterceptor(warehouseAdminInterceptor)
                 .addPathPatterns("/warehouse/admin/**");
+
+        registry.addInterceptor(goodsInterceptor)
+                .addPathPatterns("/goods/**");
     }
 
 

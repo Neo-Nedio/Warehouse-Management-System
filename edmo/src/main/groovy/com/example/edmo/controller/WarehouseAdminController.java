@@ -98,16 +98,16 @@ public class WarehouseAdminController {
     public Result saveRelation(@RequestBody WarehouseAndUserDTO warehouseAndUserDTO) {
         try {
             //检查用户和仓库是不是存在
-            if(userService.getById(warehouseAndUserDTO.getUserId())!=null
-                    && warehouseService.getById(warehouseAndUserDTO.getWarehouseId())!=null){
-                if ( warehouseUserService.save(new WarehouseAndUser(warehouseAndUserDTO))) {
+            if(userService.getById(warehouseAndUserDTO.getUserId())==null || warehouseService.getById(warehouseAndUserDTO.getWarehouseId())==null)
+                throw new WarehouseException(CodeConstant.warehouse, WarehouseConstant.NULL_WAREHOUSE_OR_USER);
+
+            if ( warehouseUserService.save(new WarehouseAndUser(warehouseAndUserDTO))) {
                     return Result.success();
                 } else {
                     throw new WarehouseException(CodeConstant.warehouse, WarehouseConstant.FALSE_SAVE);
                 }
-            }throw new WarehouseException(CodeConstant.warehouse, WarehouseConstant.FALSE_SAVE);
         } catch (Exception e) {
-            throw new WarehouseException(CodeConstant.warehouse, WarehouseConstant.FALSE_SAVE);
+            throw new WarehouseException(CodeConstant.warehouse, e.getMessage());
         }
     }
 
@@ -115,25 +115,24 @@ public class WarehouseAdminController {
     public Result modRelation(@RequestBody WarehouseAndUserDTO warehouseAndUserDTO) {
         try {
             //检查用户和仓库是不是存在
-            if(userService.getById(warehouseAndUserDTO.getUserId())!=null
-                    && warehouseService.getById(warehouseAndUserDTO.getWarehouseId())!=null)
-            {
-                if ( warehouseUserService.updateById(new WarehouseAndUser(warehouseAndUserDTO))) {
+            if(userService.getById(warehouseAndUserDTO.getUserId())==null || warehouseService.getById(warehouseAndUserDTO.getWarehouseId())==null)
+                throw new WarehouseException(CodeConstant.warehouse, WarehouseConstant.NULL_WAREHOUSE_OR_USER);
+
+            if ( warehouseUserService.updateById(new WarehouseAndUser(warehouseAndUserDTO))) {
                     return Result.success();
                 } else {
                     throw new WarehouseException(CodeConstant.warehouse, WarehouseConstant.FALSE_MOD);
                 }
-            }throw new WarehouseException(CodeConstant.warehouse, WarehouseConstant.FALSE_SAVE);
         } catch (Exception e) {
-            throw new WarehouseException(CodeConstant.warehouse, WarehouseConstant.FALSE_MOD);
+            throw new WarehouseException(CodeConstant.warehouse, e.getMessage());
         }
     }
 
 
     @PostMapping("/deleteRelation")
-    public Result deleteRelation(@RequestParam Integer id) {
+    public Result deleteRelation(@RequestParam Integer userID, @RequestParam Integer warehouseID) {
         try {
-            if (warehouseUserService.removeById(id)) {
+            if (warehouseUserService.deleteByWarehouseIdAndUserId(warehouseID, userID)) {
                 return Result.success();
             } else {
                 throw new WarehouseException(CodeConstant.warehouse, WarehouseConstant.FALSE_DELETE);
@@ -141,6 +140,11 @@ public class WarehouseAdminController {
         } catch (Exception e) {
             throw new WarehouseException(CodeConstant.warehouse, WarehouseConstant.FALSE_DELETE);
         }
+    }
+
+    @PostMapping("findRelation")
+    public Result findRelation(@RequestParam Integer userID, @RequestParam Integer warehouseID) {
+        return Result.success(warehouseUserService.findRelationByWarehouseIdAndUserId(warehouseID, userID));
     }
 
     @PostMapping("/findRelationForUser")
@@ -168,4 +172,6 @@ public class WarehouseAdminController {
         }
         return Result.success(warehouseHaveUserVOS);
     }
+
+
 }
