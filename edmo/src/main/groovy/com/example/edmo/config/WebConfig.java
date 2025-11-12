@@ -35,7 +35,7 @@ public class WebConfig implements WebMvcConfigurer {
                 );
 
 
-        // 第二层：User路径权限检查
+        // User路径权限检查
         registry.addInterceptor(userPermissionInterceptor)
                 .addPathPatterns("/user/**")
                 .excludePathPatterns(
@@ -45,10 +45,11 @@ public class WebConfig implements WebMvcConfigurer {
                         "/user/updatePassword"
                 );
 
-        // 第三层：warehouseAdmin路径权限检查
+        // warehouseAdmin路径权限检查
         registry.addInterceptor(warehouseAdminInterceptor)
                 .addPathPatterns("/warehouse/admin/**");
 
+        // goods路径权限检查
         registry.addInterceptor(goodsInterceptor)
                 .addPathPatterns("/goods/**");
     }

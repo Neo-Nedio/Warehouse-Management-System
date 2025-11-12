@@ -19,9 +19,15 @@ public class goodsInterceptor implements HandlerInterceptor {
                              HttpServletResponse response,
                              Object handler) throws Exception {
 
+        String uri = request.getRequestURI();
+        String method = request.getMethod();
+
         try {
             // 从线程中获取用户信息
             User currentUser = UserContext.getCurrentUser();
+            if (isQueryOperation(uri, method)) {
+                return true;
+            }
 
             if (currentUser.getRoleId() < 2) {
                 throw new JwtException(CodeConstant.role, JwtConstant.NEED_ROLE);
@@ -32,6 +38,17 @@ public class goodsInterceptor implements HandlerInterceptor {
         }
 
         return true;
+    }
+
+    private boolean isQueryOperation(String uri, String method) {
+
+        if ("GET".equalsIgnoreCase(method)) {
+            return true;
+        }
+
+        return uri.contains("/find") ||
+                uri.contains("/listPage");
+
     }
 
 }

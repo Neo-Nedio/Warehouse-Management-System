@@ -43,6 +43,9 @@ public class Goods {
     @TableField("update_user")
     private String updateUser;
 
+    @TableField("status")
+    private Integer status;
+
     public Goods(goodsDTO goodsDTO) {
         this.id = goodsDTO.getId();
         this.name = goodsDTO.getName();

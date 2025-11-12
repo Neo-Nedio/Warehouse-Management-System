@@ -3,7 +3,6 @@ package com.example.edmo.pojo.VO;
 
 import com.example.edmo.pojo.entity.User;
 import com.example.edmo.pojo.entity.Warehouse;
-import com.example.edmo.pojo.entity.WarehouseAndUser;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

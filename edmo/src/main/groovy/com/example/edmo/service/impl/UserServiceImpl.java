@@ -1,4 +1,4 @@
-package com.example.edmo.service;
+package com.example.edmo.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -8,6 +8,7 @@ import com.example.edmo.pojo.DTO.PageDTO;
 import com.example.edmo.pojo.DTO.LoginRequest;
 import com.example.edmo.pojo.entity.User;
 import com.example.edmo.mapper.UserMapper;
+import com.example.edmo.service.UserService;
 import jakarta.annotation.Resource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;

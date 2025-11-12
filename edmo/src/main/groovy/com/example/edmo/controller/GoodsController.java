@@ -1,11 +1,13 @@
 package com.example.edmo.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.edmo.Constant.CodeConstant;
 import com.example.edmo.Constant.GoodsConstant;
 import com.example.edmo.Jwt.UserContext;
 import com.example.edmo.annotation.AutoFill;
 import com.example.edmo.enumeration.OperationType;
 import com.example.edmo.exception.goodsException;
+import com.example.edmo.pojo.DTO.PageDTO;
 import com.example.edmo.pojo.DTO.goodsDTO;
 import com.example.edmo.pojo.entity.Goods;
 import com.example.edmo.service.GoodsService;
@@ -97,7 +99,7 @@ public class GoodsController {
             if(!UserContext.getCurrentUser().getManagedWarehouseIds().contains(warehouseId))
                 throw new goodsException(CodeConstant.goods,GoodsConstant.NULL_ROLE);
 
-            if ( goodsService.removeById(id)){
+            if ( goodsService.loginDeleteGoodsById(id)){
                 return Result.success();
             }else  {
                 throw new goodsException(CodeConstant.goods, GoodsConstant.FALSE_DELETE);
@@ -107,4 +109,34 @@ public class GoodsController {
         }
     }
 
+    //查找，不需要第二级权限
+
+    //查询商品，只能查自己管理的库
+    @PostMapping("/findGoodsByID")
+    public Result findGoodsByID(@RequestParam Integer id) {
+        Goods goods = goodsService.findGoodsById(id,UserContext.getCurrentUser().getManagedWarehouseIds());
+        return Result.success(goods);
+    }
+
+    @PostMapping("/findByNameLike")
+    public Result findByNameLike(@RequestParam String name) {
+        return Result.success(goodsService.findGoodsByNameLike(name,UserContext.getCurrentUser().getManagedWarehouseIds()));
+    }
+
+    @PostMapping("/listPage")
+    public Result listPage(@RequestBody PageDTO pageDTO) {
+        Page<Goods> page=goodsService.findGoodsByNameLike(pageDTO,UserContext.getCurrentUser().getManagedWarehouseIds());
+        return Result.success(page.getRecords());
+    }
+
+    //根据仓库查找
+    @PostMapping("/findGoodsByWarehouseID")
+    public Result findGoodsByWarehouseID(@RequestParam Integer id) {
+        return Result.success(goodsService.findGoodsByWarehouseId(id,UserContext.getCurrentUser().getManagedWarehouseIds()));
+    }
+
+    @GetMapping("/findGoodsAllByManagedWarehouseIds")
+    public Result findGoodsAllByManagedWarehouseIds() {
+        return Result.success(goodsService.findGoodsAllByManagedWarehouseIds(UserContext.getCurrentUser().getManagedWarehouseIds()));
+    }
 }

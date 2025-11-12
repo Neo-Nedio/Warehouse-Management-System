@@ -10,7 +10,6 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-@JsonIgnoreProperties(ignoreUnknown = true)
 @AllArgsConstructor
 public class UserHaveWarehouseVO {
     private Integer id;

@@ -1,10 +1,11 @@
-package com.example.edmo.service;
+package com.example.edmo.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.edmo.mapper.WarehouseUserMapper;
 import com.example.edmo.pojo.entity.WarehouseAndUser;
+import com.example.edmo.service.WarehouseUserService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
