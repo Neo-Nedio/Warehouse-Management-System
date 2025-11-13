@@ -26,6 +26,7 @@ public class UserDTO {
     private Integer roleId;
 
     public UserDTO(User queryUser) {
+        this.id = queryUser.getId();
         this.name = queryUser.getName();
         this.email = queryUser.getEmail();
         this.password = queryUser.getPassword();

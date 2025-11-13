@@ -1,8 +1,8 @@
 package com.example.edmo.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.example.edmo.Constant.CodeConstant;
-import com.example.edmo.Constant.WarehouseConstant;
+import com.example.edmo.util.Constant.CodeConstant;
+import com.example.edmo.util.Constant.WarehouseConstant;
 import com.example.edmo.exception.WarehouseException;
 import com.example.edmo.pojo.DTO.PageDTO;
 import com.example.edmo.pojo.DTO.WarehouseAndUserDTO;
@@ -12,9 +12,9 @@ import com.example.edmo.pojo.VO.WarehouseHaveUserVO;
 import com.example.edmo.pojo.entity.User;
 import com.example.edmo.pojo.entity.Warehouse;
 import com.example.edmo.pojo.entity.WarehouseAndUser;
-import com.example.edmo.service.UserService;
-import com.example.edmo.service.WarehouseService;
-import com.example.edmo.service.WarehouseUserService;
+import com.example.edmo.service.Interface.UserService;
+import com.example.edmo.service.Interface.WarehouseService;
+import com.example.edmo.service.Interface.WarehouseUserService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 

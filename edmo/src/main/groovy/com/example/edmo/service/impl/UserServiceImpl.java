@@ -8,7 +8,7 @@ import com.example.edmo.pojo.DTO.PageDTO;
 import com.example.edmo.pojo.DTO.LoginRequest;
 import com.example.edmo.pojo.entity.User;
 import com.example.edmo.mapper.UserMapper;
-import com.example.edmo.service.UserService;
+import com.example.edmo.service.Interface.UserService;
 import jakarta.annotation.Resource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;

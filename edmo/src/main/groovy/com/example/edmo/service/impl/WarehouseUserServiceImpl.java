@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.edmo.mapper.WarehouseUserMapper;
 import com.example.edmo.pojo.entity.WarehouseAndUser;
-import com.example.edmo.service.WarehouseUserService;
+import com.example.edmo.service.Interface.WarehouseUserService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 

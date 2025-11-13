@@ -1,21 +1,28 @@
 package com.example.edmo.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.example.edmo.Constant.CodeConstant;
-import com.example.edmo.Constant.GoodsConstant;
-import com.example.edmo.Jwt.UserContext;
+import com.example.edmo.annotation.AutoFillList;
+import com.example.edmo.service.Interface.OperationLogService;
+import com.example.edmo.util.Constant.CodeConstant;
+import com.example.edmo.util.Constant.GoodsConstant;
+import com.example.edmo.util.Jwt.UserContext;
 import com.example.edmo.annotation.AutoFill;
 import com.example.edmo.enumeration.OperationType;
-import com.example.edmo.exception.goodsException;
+import com.example.edmo.exception.GoodsException;
 import com.example.edmo.pojo.DTO.PageDTO;
-import com.example.edmo.pojo.DTO.goodsDTO;
+import com.example.edmo.pojo.DTO.GoodsDTO;
 import com.example.edmo.pojo.entity.Goods;
-import com.example.edmo.service.GoodsService;
-import com.example.edmo.service.WarehouseService;
+import com.example.edmo.service.Interface.GoodsService;
+import com.example.edmo.service.Interface.WarehouseService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
+//todo 参数校验,实现token的续期与过期
+//todo 检查自动填充加包名为什么不行
 @RestController
 @RequestMapping("/goods")
 public class GoodsController {
@@ -25,87 +32,142 @@ public class GoodsController {
     @Resource
     WarehouseService warehouseService;
 
+    @Resource
+    private OperationLogService operationLogService;
+
     @PostMapping("/save")
     @AutoFill(value = OperationType.INSERT)
-    public Result saveGoods(@RequestBody goodsDTO goodsDTO) {
+    public Result saveGoods(@RequestBody GoodsDTO goodsDTO) {
         try {
             if( warehouseService.getById(goodsDTO.getWarehouseId())==null)
-                throw new goodsException(CodeConstant.goods,GoodsConstant.NULL_WAREHOUSE);
+                throw new GoodsException(CodeConstant.goods,GoodsConstant.NULL_WAREHOUSE);
             if(!UserContext.getCurrentUser().getManagedWarehouseIds().contains(goodsDTO.getWarehouseId()))
-                throw new goodsException(CodeConstant.goods,GoodsConstant.NULL_ROLE);
+                throw new GoodsException(CodeConstant.goods,GoodsConstant.NULL_ROLE);
 
-            if ( goodsService.save(new Goods(goodsDTO))){
+            Goods goods = new Goods(goodsDTO);
+            if ( goodsService.save(goods) ){
+                //反过来获取id用于插入
+                    goodsDTO.setId(goods.getId());
+                    operationLogService.addLog(goodsDTO);
                     return Result.success();
                 } else {
-                    throw new goodsException(CodeConstant.goods, GoodsConstant.FALSE_SAVE);
+                    throw new GoodsException(CodeConstant.goods, GoodsConstant.FALSE_SAVE);
                 }
             } catch (Exception e) {
-                throw new goodsException(CodeConstant.goods, e.getMessage());
+                throw new GoodsException(CodeConstant.goods, e.getMessage());
             }
+
+    }
+
+    @PostMapping("/saveListInSameWarehouse")
+    @AutoFillList(value = OperationType.INSERT)
+    public Result saveGoodsListInSameWarehouse(@RequestBody List<GoodsDTO> goodsDTOList) {
+        try {
+            //验证
+            Integer firstWarehouseId = goodsDTOList.get(0).getWarehouseId();
+            for(GoodsDTO goodsDTO:goodsDTOList){
+                if(goodsDTO.getWarehouseId() != firstWarehouseId) throw  new GoodsException(CodeConstant.goods,GoodsConstant.WAREHOUSE_ID_NOT_SAME);
+            }
+            if( warehouseService.getById( goodsDTOList.get(0).getWarehouseId() )==null)
+                throw new GoodsException(CodeConstant.goods,GoodsConstant.NULL_WAREHOUSE);
+            if(!UserContext.getCurrentUser().getManagedWarehouseIds().contains( goodsDTOList.get(0).getWarehouseId() ) )
+                throw new GoodsException(CodeConstant.goods,GoodsConstant.NULL_ROLE);
+
+
+            List<Goods> goodsList = goodsDTOList.stream()
+                    .map(Goods::new)
+                    .collect(Collectors.toList());
+
+            // 批量插入，ID会自动回填到goodsList中的每个Goods对象
+            if (goodsService.saveBatch(goodsList)) {
+                for (int i = 0; i < goodsList.size(); i++) {
+                    Goods goods = goodsList.get(i);
+                    GoodsDTO goodsDTO = goodsDTOList.get(i);
+                    goodsDTO.setId(goods.getId());
+                }
+
+                // 批量记录操作日志
+                operationLogService.batchAddLog(goodsDTOList);
+                return Result.success();
+            } else {
+                throw new GoodsException(CodeConstant.goods, GoodsConstant.FALSE_SAVE);
+            }
+        } catch (Exception e) {
+            throw new GoodsException(CodeConstant.goods, e.getMessage());
+        }
 
     }
 
     @PostMapping("/mod/message")
     @AutoFill(value = OperationType.UPDATE)
-    public Result modMessage(@RequestBody goodsDTO goodsDTO) {
+    public Result modMessage(@RequestBody GoodsDTO goodsDTO) {
         try {
-            if(goodsService.getById(goodsDTO.getId())==null)
-                throw new goodsException(CodeConstant.goods,GoodsConstant.NULL_GOODS);
+            Goods goods = goodsService.getById(goodsDTO.getId());
+            if(goods==null)
+                throw new GoodsException(CodeConstant.goods,GoodsConstant.NULL_GOODS);
             if( goodsDTO.getWarehouseId()!=null)
-                throw new goodsException(CodeConstant.goods,GoodsConstant.FALSE_OPERATE_UNDATE_WAREHOUSE);
-            if(!UserContext.getCurrentUser().getManagedWarehouseIds().contains(goodsDTO.getWarehouseId()))
-                throw new goodsException(CodeConstant.goods,GoodsConstant.NULL_ROLE);
+                throw new GoodsException(CodeConstant.goods,GoodsConstant.FALSE_OPERATE_UNDATE_WAREHOUSE);
+            if(!UserContext.getCurrentUser().getManagedWarehouseIds().contains(goods.getWarehouseId()))
+                throw new GoodsException(CodeConstant.goods,GoodsConstant.NULL_ROLE);
 
 
             if ( goodsService.updateById(new Goods(goodsDTO))){
+                goodsDTO.setWarehouseId(goods.getWarehouseId());
+                operationLogService.modMessage(goodsDTO);
                 return Result.success();
             } else {
-                throw new goodsException(CodeConstant.goods, GoodsConstant.FALSE_MOD);
+                throw new GoodsException(CodeConstant.goods, GoodsConstant.FALSE_MOD);
             }
         } catch (Exception e) {
-            throw new goodsException(CodeConstant.goods, e.getMessage());
+            throw new GoodsException(CodeConstant.goods, e.getMessage());
         }
     }
 
     @PostMapping("/mod/warehouse")
     @AutoFill(value = OperationType.UPDATE)
-    public Result modWarehouse(@RequestBody goodsDTO goodsDTO) {
+    public Result modWarehouse(@RequestBody GoodsDTO goodsDTO) {
         try {
-            if(goodsService.getById(goodsDTO.getId())==null)
-                throw new goodsException(CodeConstant.goods,GoodsConstant.NULL_GOODS);
+            Goods goods = goodsService.getById(goodsDTO.getId());
+            if(goods==null)
+                throw new GoodsException(CodeConstant.goods,GoodsConstant.NULL_GOODS);
             if( warehouseService.getById(goodsDTO.getWarehouseId())==null)
-                throw new goodsException(CodeConstant.goods,GoodsConstant.NULL_WAREHOUSE);
-            if(!UserContext.getCurrentUser().getManagedWarehouseIds().contains(goodsDTO.getWarehouseId()))
-                throw new goodsException(CodeConstant.goods,GoodsConstant.NULL_ROLE);
-
+                throw new GoodsException(CodeConstant.goods,GoodsConstant.NULL_WAREHOUSE);
+            List<Integer> requiredIds = Arrays.asList(goodsDTO.getWarehouseId(), goods.getWarehouseId());
+            if(!UserContext.getCurrentUser().getManagedWarehouseIds().containsAll(requiredIds))
+                throw new GoodsException(CodeConstant.goods,GoodsConstant.NULL_ROLE);
 
             if ( goodsService.updateGoodsInWarehouse(new Goods(goodsDTO))){
+                operationLogService.modWarehouse(goods,goodsDTO);
                 return Result.success();
             } else {
-                throw new goodsException(CodeConstant.goods, GoodsConstant.FALSE_MOD);
+                throw new GoodsException(CodeConstant.goods, GoodsConstant.FALSE_MOD);
             }
         } catch (Exception e) {
-            throw new goodsException(CodeConstant.goods, e.getMessage());
+            throw new GoodsException(CodeConstant.goods, e.getMessage());
         }
     }
 
     @PostMapping("/delete")
-    public Result deleteGoods(@RequestParam Integer id) {
+    @AutoFill(value = OperationType.UPDATE)
+    public Result deleteGoods(@RequestBody GoodsDTO goodsDTO) {
         try {
-            if(goodsService.getById(id)==null)
-                throw new goodsException(CodeConstant.goods,GoodsConstant.NULL_GOODS);
+            Goods goods = goodsService.getById(goodsDTO.getId());
+            if(goods==null || goods.getStatus()==0)
+                throw new GoodsException(CodeConstant.goods,GoodsConstant.NULL_GOODS);
 
-            Integer warehouseId = goodsService.getById(id).getWarehouseId();
+            Integer warehouseId = goods.getWarehouseId();
             if(!UserContext.getCurrentUser().getManagedWarehouseIds().contains(warehouseId))
-                throw new goodsException(CodeConstant.goods,GoodsConstant.NULL_ROLE);
+                throw new GoodsException(CodeConstant.goods,GoodsConstant.NULL_ROLE);
 
-            if ( goodsService.loginDeleteGoodsById(id)){
+
+            if (goodsService.loginDeleteGoodsById(goodsDTO)){
+                operationLogService.delete(goods,goodsDTO);
                 return Result.success();
             }else  {
-                throw new goodsException(CodeConstant.goods, GoodsConstant.FALSE_DELETE);
+                throw new GoodsException(CodeConstant.goods, GoodsConstant.FALSE_DELETE);
             }
         }catch (Exception e){
-            throw new goodsException(CodeConstant.goods, e.getMessage());
+            throw new GoodsException(CodeConstant.goods, e.getMessage());
         }
     }
 
@@ -138,5 +200,15 @@ public class GoodsController {
     @GetMapping("/findGoodsAllByManagedWarehouseIds")
     public Result findGoodsAllByManagedWarehouseIds() {
         return Result.success(goodsService.findGoodsAllByManagedWarehouseIds(UserContext.getCurrentUser().getManagedWarehouseIds()));
+    }
+
+    @PostMapping("/findGoodsByNameLikeInByManagedWarehouseIds")
+    public Result findGoodsByNameLikeInByManagedWarehouseIds(@RequestParam String name) {
+        return Result.success(goodsService.findGoodsByNameLikeInByManagedWarehouseIds(name,UserContext.getCurrentUser().getManagedWarehouseIds()));
+    }
+
+    @PostMapping("/findGoodsByAnyCondition")
+    public Result findGoodsByAnyCondition(@RequestBody GoodsDTO goodsDTO) {
+        return Result.success(goodsService.findGoodsByAnyCondition(goodsDTO,UserContext.getCurrentUser().getManagedWarehouseIds()));
     }
 }

@@ -9,22 +9,24 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class goodsDTO {
-    private Integer id;
+public class OperationLogDTO {
+    Integer id;
 
-    private String name;
+    String operateType;
 
-    private Integer price;
+    Integer goodsId;
 
-    private Integer number;
+    String goodsName;
 
-    private Integer warehouseId;
+    Integer formerWarehouseId;
 
-    private LocalDateTime createTime;
-
-    private String createUser;
+    Integer newWarehouseId;
 
     private LocalDateTime updateTime;
 
     private String updateUser;
+
+    private LocalDateTime startTime;
+
+    private LocalDateTime endTime;
 }

@@ -1,4 +1,4 @@
-package com.example.edmo.Jwt;
+package com.example.edmo.util.Jwt;
 
 import com.example.edmo.pojo.entity.User;
 

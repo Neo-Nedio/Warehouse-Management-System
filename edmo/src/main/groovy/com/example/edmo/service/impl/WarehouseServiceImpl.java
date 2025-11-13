@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.edmo.mapper.WarehouseAdminMapper;
 import com.example.edmo.pojo.DTO.PageDTO;
 import com.example.edmo.pojo.entity.Warehouse;
-import com.example.edmo.service.WarehouseService;
+import com.example.edmo.service.Interface.WarehouseService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 

@@ -1,4 +1,4 @@
-package com.example.edmo.Constant;
+package com.example.edmo.util.Constant;
 
 public class JwtConstant {
     public static String NULL_TOKEN ="没有登录";

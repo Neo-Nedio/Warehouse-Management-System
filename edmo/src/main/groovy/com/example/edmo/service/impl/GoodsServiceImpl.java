@@ -8,11 +8,12 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.edmo.mapper.GoodsMapper;
 import com.example.edmo.mapper.WarehouseAdminMapper;
+import com.example.edmo.pojo.DTO.GoodsDTO;
 import com.example.edmo.pojo.DTO.PageDTO;
 import com.example.edmo.pojo.VO.GoodsInWarehouseVO;
 import com.example.edmo.pojo.entity.Goods;
 import com.example.edmo.pojo.entity.Warehouse;
-import com.example.edmo.service.GoodsService;
+import com.example.edmo.service.Interface.GoodsService;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -41,12 +42,29 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
     }
 
     @Override
-    public boolean loginDeleteGoodsById(Integer id) {
+    public boolean loginDeleteGoodsById(GoodsDTO goodsDTO) {
         UpdateWrapper<Goods> wrapper = Wrappers
                 .<Goods>update()
-                .eq("id", id)
-                .set("status", 0);
+                .eq("id", goodsDTO.getId())
+                .eq("status",1)
+                .set("status", 0)
+                .set("update_time",goodsDTO.getUpdateTime())
+                .set("update_user",goodsDTO.getUpdateUser());
         return goodsMapper.update(wrapper) > 0;
+    }
+
+    @Override
+    public List<Goods> findGoodsByIds(List<GoodsDTO> goodsDTOList) {
+        List<Integer> ids = goodsDTOList.stream()
+                .map(GoodsDTO::getId)
+                .toList();
+
+        Wrapper<Goods> wrapper = Wrappers
+                .<Goods>query().
+                in("id", ids)
+                .eq("status",1);
+
+        return goodsMapper.selectList(wrapper);
     }
 
     @Override
@@ -107,11 +125,48 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
         QueryWrapper<Warehouse> wrapper2=Wrappers
                 .<Warehouse>query()
                 //列表用in
-                .in("id",managedWarehouseIds)
+                .in("warehouse_id",managedWarehouseIds)
                 .orderByDesc("id");
         List<Warehouse> warehouses = warehouseAdminMapper.selectList(wrapper2);
 
         return fillGoods(warehouses);
+    }
+
+    @Override
+    public List<GoodsInWarehouseVO> findGoodsByNameLikeInByManagedWarehouseIds(String name, List<Integer> managedWarehouseIds) {
+        QueryWrapper<Warehouse> wrapper2=Wrappers
+                .<Warehouse>query()
+                //列表用in
+                .like("name", name)
+                .in("warehouse_id",managedWarehouseIds)
+                .orderByDesc("id");
+        List<Warehouse> warehouses = warehouseAdminMapper.selectList(wrapper2);
+
+        return fillGoods(warehouses);
+    }
+
+    @Override
+    public List<Goods> findGoodsByAnyCondition(GoodsDTO goodsDTO, List<Integer> managedWarehouseIds) {
+        Wrapper<Goods> wrapper = Wrappers
+                .<Goods>query()
+                .eq(goodsDTO.getId()!=null,"id",goodsDTO.getId())
+                .like(goodsDTO.getName()!=null,"name", goodsDTO.getName())
+                .eq(goodsDTO.getPrice()!=null,"price", goodsDTO.getPrice())
+                .eq(goodsDTO.getNumber()!=null,"number", goodsDTO.getNumber())
+                .eq(goodsDTO.getWarehouseId()!=null,"warehouse_id", goodsDTO.getWarehouseId())
+                .like(goodsDTO.getCreateUser()!=null,"create_user", goodsDTO.getCreateUser())
+                .like(goodsDTO.getUpdateUser()!=null,"update_user", goodsDTO.getUpdateUser())
+
+                // 创建时间范围查询
+                .ge(goodsDTO.getStartCreateTime() != null, "create_time", goodsDTO.getStartCreateTime())
+                .le(goodsDTO.getEndCreateTime() != null, "create_time", goodsDTO.getEndCreateTime())
+                // 更新时间范围查询
+                .ge(goodsDTO.getStartUpdateTime() != null, "update_time", goodsDTO.getStartUpdateTime())
+                .le(goodsDTO.getEndUpdateTime() != null, "update_time", goodsDTO.getEndUpdateTime())
+
+                .eq("status", 1)
+                .in("warehouse_id",managedWarehouseIds);
+        return goodsMapper.selectList(wrapper);
     }
 
     private List<GoodsInWarehouseVO> fillGoods(List<Warehouse> warehouses){

@@ -1,4 +1,4 @@
-package com.example.edmo.Constant;
+package com.example.edmo.util.Constant;
 
 public class GoodsConstant {
     public static String FALSE_SAVE="保存失败";
@@ -8,4 +8,5 @@ public class GoodsConstant {
     public static String NULL_WAREHOUSE="仓库不存在";
     public static String NULL_GOODS="货品不存在";
     public static String FALSE_OPERATE_UNDATE_WAREHOUSE="不能在这里更改仓库";
+    public static String WAREHOUSE_ID_NOT_SAME="仓库并不是都相同";
 }

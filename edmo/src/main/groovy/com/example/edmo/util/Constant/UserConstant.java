@@ -1,4 +1,4 @@
-package com.example.edmo.Constant;
+package com.example.edmo.util.Constant;
 
 public class UserConstant {
     public static String FALSE_EMAIL_OR_PASSWORD="邮箱或密码错误";

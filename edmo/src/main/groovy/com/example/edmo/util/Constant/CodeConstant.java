@@ -1,4 +1,4 @@
-package com.example.edmo.Constant;
+package com.example.edmo.util.Constant;
 
 public class CodeConstant {
     public static int system =0;
@@ -7,4 +7,5 @@ public class CodeConstant {
     public static int user = 3;
     public static int warehouse = 4;
     public static int goods = 5;
+    public static int operationLog = 6;
 }

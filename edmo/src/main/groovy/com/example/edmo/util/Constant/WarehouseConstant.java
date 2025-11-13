@@ -1,4 +1,4 @@
-package com.example.edmo.Constant;
+package com.example.edmo.util.Constant;
 
 public class WarehouseConstant {
     public static String FALSE_SAVE="保存失败";

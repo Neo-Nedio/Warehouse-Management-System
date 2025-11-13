@@ -1,18 +1,19 @@
 package com.example.edmo.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.example.edmo.Constant.CodeConstant;
-import com.example.edmo.Constant.UserConstant;
-import com.example.edmo.Jwt.JwtUtil;
+import com.example.edmo.util.Constant.CodeConstant;
+import com.example.edmo.util.Constant.UserConstant;
+import com.example.edmo.util.Jwt.JwtUtil;
 import com.example.edmo.pojo.DTO.PageDTO;
 import com.example.edmo.pojo.DTO.LoginRequest;
 import com.example.edmo.pojo.DTO.UserDTO;
 import com.example.edmo.pojo.entity.User;
 import com.example.edmo.exception.UserException;
-import com.example.edmo.service.UserService;
-import com.example.edmo.service.WarehouseUserService;
+import com.example.edmo.service.Interface.UserService;
+import com.example.edmo.service.Interface.WarehouseUserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -26,7 +27,7 @@ public class UserController {
     private UserService userService;
 
     @Resource
-    WarehouseUserService warehouseUserService;
+    private BCryptPasswordEncoder encoder;
 
     @PostMapping("/code")
     public Result createCode(@RequestBody LoginRequest loginRequest,
@@ -47,10 +48,10 @@ public class UserController {
     public Result loginByPassword(@RequestBody LoginRequest loginRequest){
         // 根据邮箱查找用户
         User user=userService.findUserByEmail(loginRequest);
-        if (user == null || !user.getPassword().equals(loginRequest.getPassword()))
+        //匹配用match
+        if (user == null || !encoder.matches(loginRequest.getPassword(),user.getPassword())) {
             throw new UserException(CodeConstant.user,UserConstant.FALSE_EMAIL_OR_PASSWORD);
-
-
+        }
         return sendToken(user);
     }
 
@@ -99,7 +100,7 @@ public class UserController {
 
         String password = loginRequest.getPassword();
         User user=userService.findUserByEmail(loginRequest);
-        user.setPassword(password);
+        user.setPassword(encoder.encode(password));
         mod(new UserDTO(user));
         return Result.success();
     }
@@ -140,6 +141,7 @@ public class UserController {
     @PostMapping("/save")
     public Result save(@RequestBody UserDTO userDTO) {
         try {
+            userDTO.setPassword(encoder.encode(userDTO.getPassword()));
             User user = new User(userDTO);
             if (userService.save(user)) {
                 return Result.success();

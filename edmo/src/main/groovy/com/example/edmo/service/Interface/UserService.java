@@ -1,4 +1,4 @@
-package com.example.edmo.service;
+package com.example.edmo.service.Interface;
 
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;

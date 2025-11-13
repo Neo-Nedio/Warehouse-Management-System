@@ -3,15 +3,15 @@ package com.example.edmo.exception;
 import lombok.Getter;
 
 @Getter
-public class goodsException extends BaseException {
+public class OperationLogException extends RuntimeException {
     private final int code;
 
-    public goodsException(int code, String message) {
+    public OperationLogException(int code, String message) {
         super(message);
         this.code = code;
     }
 
-    public goodsException(String message) {
+    public OperationLogException(String message) {
         super(message);
         this.code = 401;
     }

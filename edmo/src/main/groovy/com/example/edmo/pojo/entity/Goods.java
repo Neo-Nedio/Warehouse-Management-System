@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.example.edmo.pojo.DTO.goodsDTO;
+import com.example.edmo.pojo.DTO.GoodsDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -46,7 +46,7 @@ public class Goods {
     @TableField("status")
     private Integer status;
 
-    public Goods(goodsDTO goodsDTO) {
+    public Goods(GoodsDTO goodsDTO) {
         this.id = goodsDTO.getId();
         this.name = goodsDTO.getName();
         this.price = goodsDTO.getPrice();
