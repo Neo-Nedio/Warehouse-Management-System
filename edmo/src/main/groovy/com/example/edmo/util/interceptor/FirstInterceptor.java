@@ -1,7 +1,9 @@
 package com.example.edmo.util.interceptor;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.example.edmo.util.Constant.CodeConstant;
 import com.example.edmo.util.Constant.JwtConstant;
+import com.example.edmo.util.Constant.RedisConstant;
 import com.example.edmo.util.Jwt.JwtUtil;
 import com.example.edmo.util.Jwt.UserContext;
 import com.example.edmo.pojo.entity.User;
@@ -9,11 +11,15 @@ import com.example.edmo.exception.BaseException;
 import com.example.edmo.exception.JwtException;
 import com.example.edmo.service.Interface.UserService;
 import com.example.edmo.service.Interface.WarehouseUserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
+
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class FirstInterceptor implements HandlerInterceptor {
@@ -23,6 +29,9 @@ public class FirstInterceptor implements HandlerInterceptor {
 
     @Resource
     private WarehouseUserService warehouseUserService;
+
+    @Resource
+    private StringRedisTemplate  stringRedisTemplate;
 
     @Override
     public boolean preHandle(HttpServletRequest request,
@@ -34,7 +43,7 @@ public class FirstInterceptor implements HandlerInterceptor {
 
 
 
-        //
+        //todo
         String token = request.getHeader("token");
         try {
             if (token == null ) throw new JwtException(CodeConstant.token,JwtConstant.NULL_TOKEN);
@@ -42,14 +51,32 @@ public class FirstInterceptor implements HandlerInterceptor {
             if (!JwtUtil.verifyToken(token)) throw new JwtException(CodeConstant.token,JwtConstant.FALSE_TOKEN);
 
             // 获取用户信息并存储
-            Integer userId = JwtUtil.getUserId(token);
-            if (userId != null) {
-                User user = userService.getById(userId);
-                if (user != null) {
-                    user.setManagedWarehouseIds(warehouseUserService.findWarehouseIdByUserId(userId));
-                    UserContext.setCurrentUser(user);
-                    return true;
+            String key = RedisConstant.LOGIN_USER_KEY + token;
+            String Json = stringRedisTemplate.opsForValue().get(key);
+
+            if(Json == null){
+                Integer userId = JwtUtil.getUserId(token);
+                if (userId != null) {
+                    User user = userService.getById(userId);
+                    if (user != null) {
+                        user.setManagedWarehouseIds(warehouseUserService.findWarehouseIdByUserId(userId));
+
+                        //把user放入redis
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        String userJson = objectMapper.writeValueAsString(user);
+
+                        stringRedisTemplate.opsForValue().set(key, userJson, RedisConstant.LOGIN_USER_TTL, TimeUnit.MINUTES);
+
+                        UserContext.setCurrentUser(user);
+                        return true;
+                    }
                 }
+            }else{
+                ObjectMapper objectMapper = new ObjectMapper();
+                User user = objectMapper.readValue(Json, User.class);
+                UserContext.setCurrentUser(user);
+                stringRedisTemplate.expire(key, RedisConstant.LOGIN_USER_TTL, TimeUnit.MINUTES);
+                return true;
             }
 
 

@@ -2,6 +2,7 @@ package com.example.edmo.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.edmo.util.Constant.CodeConstant;
+import com.example.edmo.util.Constant.RedisConstant;
 import com.example.edmo.util.Constant.UserConstant;
 import com.example.edmo.util.Jwt.JwtUtil;
 import com.example.edmo.pojo.DTO.PageDTO;
@@ -10,14 +11,17 @@ import com.example.edmo.pojo.DTO.UserDTO;
 import com.example.edmo.pojo.entity.User;
 import com.example.edmo.exception.UserException;
 import com.example.edmo.service.Interface.UserService;
-import com.example.edmo.service.Interface.WarehouseUserService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
-import jakarta.servlet.http.HttpSession;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 
 @RestController
@@ -29,17 +33,20 @@ public class UserController {
     @Resource
     private BCryptPasswordEncoder encoder;
 
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
     @PostMapping("/code")
-    public Result createCode(@RequestBody LoginRequest loginRequest,
-                                          HttpSession Session) {
+    public Result createCode(@RequestBody LoginRequest loginRequest) {
 
         String email = loginRequest.getEmail();
 
         int code=userService.CreatCode(loginRequest);
         if(code==0) throw new UserException(CodeConstant.user,UserConstant.NULL_USER);
 
-        Session.setAttribute("email",email);
-        Session.setAttribute("code",code);
+        //把验证码保存在redis
+        stringRedisTemplate.opsForValue().set(RedisConstant.LOGIN_CODE_KEY +email,String.valueOf(code),RedisConstant.LOGIN_CODE_TTL, TimeUnit.MINUTES);
+
 
         return Result.success();
     }
@@ -56,47 +63,38 @@ public class UserController {
     }
 
     @PostMapping("/loginByCode")
-    public Result loginByCode(@RequestBody LoginRequest loginRequest,
-                                        HttpSession session) {
+    public Result loginByCode(@RequestBody LoginRequest loginRequest) {
 
         String email = loginRequest.getEmail();
         int code = loginRequest.getCode();
 
-        // === 关键：安全地获取 Session 属性 ===
-        if (session.getAttribute("code") == null ||  session.getAttribute("email") == null) {
-            throw new UserException(CodeConstant.user,UserConstant.NEED_CODE);
-        }
+        //todo 获取验证码并检验
+        int redisCode = Optional.ofNullable(
+                        stringRedisTemplate.opsForValue().get(RedisConstant.LOGIN_CODE_KEY + email)
+                )
+                .map(Integer::parseInt)
+                .orElseThrow(() -> new UserException(CodeConstant.user, UserConstant.NEED_CODE));
 
 
-        int sessionCode = (int) session.getAttribute("code");
-        String sessionEmail = (String) session.getAttribute("email");
-
-
-        if(code!=sessionCode) throw new UserException(CodeConstant.user,UserConstant.FALSE_CODE);
-        if(!email.equals(sessionEmail)) throw new UserException(CodeConstant.user,UserConstant.NEED_CODE);
+        if(code!=redisCode) throw new UserException(CodeConstant.user,UserConstant.FALSE_CODE);
 
         User user=userService.findUserByEmail(loginRequest);//获取验证码时已经检验用户是否存在
         return sendToken(user);
     }
 
     @PostMapping("/updatePassword")
-    public Result updatePassword(@RequestBody LoginRequest loginRequest,
-                                 HttpSession session) {
+    public Result updatePassword(@RequestBody LoginRequest loginRequest) {
         String email = loginRequest.getEmail();
         int code = loginRequest.getCode();
 
-        // === 关键：安全地获取 Session 属性 ===
-        if (session.getAttribute("code") == null ||  session.getAttribute("email") == null) {
-            throw new UserException(CodeConstant.user,UserConstant.NEED_CODE);
-        }
+        int redisCode = Optional.ofNullable(
+                        stringRedisTemplate.opsForValue().get(RedisConstant.LOGIN_CODE_KEY + email)
+                )
+                .map(Integer::parseInt)
+                .orElseThrow(() -> new UserException(CodeConstant.user, UserConstant.NEED_CODE));
 
 
-        int sessionCode = (int) session.getAttribute("code");
-        String sessionEmail = (String) session.getAttribute("email");
-
-
-        if(code!=sessionCode) throw new UserException(CodeConstant.user,UserConstant.FALSE_CODE);
-        if(!email.equals(sessionEmail)) throw new UserException(CodeConstant.user,UserConstant.NEED_CODE);
+        if(code!=redisCode) throw new UserException(CodeConstant.user,UserConstant.FALSE_CODE);
 
         String password = loginRequest.getPassword();
         User user=userService.findUserByEmail(loginRequest);
@@ -106,9 +104,21 @@ public class UserController {
     }
 
 
-    private Result sendToken(User user){
+    private Result sendToken(User user)  {
         // 生成token
         String token = JwtUtil.createToken(user);
+
+        //把user放入redis
+        String key = RedisConstant.LOGIN_USER_KEY + token;
+        ObjectMapper objectMapper = new ObjectMapper();
+        String userJson = null;
+        try {
+            userJson = objectMapper.writeValueAsString(user);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
+        stringRedisTemplate.opsForValue().set(key, userJson, RedisConstant.LOGIN_USER_TTL, TimeUnit.MINUTES);
 
         // 返回结果（不包含密码）
         Map<String, Object> result = new HashMap<>();

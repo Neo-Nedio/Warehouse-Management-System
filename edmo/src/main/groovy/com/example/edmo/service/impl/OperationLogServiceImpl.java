@@ -40,7 +40,7 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Ope
             operationLogList.add(operationLog);
         }*/
 
-        //使用流
+        //todo使用流
         List<OperationLog> operationLogList = goodsDTOList.stream()
                 .map(goodsDTO -> {
                     OperationLog operationLog = new OperationLog();
@@ -149,7 +149,7 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Ope
     }
 
     @Override
-    public List<OperationLog> findByAnyCondition(OperationLogDTO operationLogDTO) {
+    public List<OperationLog>  findByAnyCondition(OperationLogDTO operationLogDTO) {
         Wrapper<OperationLog> wrapper =Wrappers
                 .<OperationLog>query()
                 .eq(operationLogDTO.getId()!=null,"id",operationLogDTO.getId())
