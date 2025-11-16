@@ -2,7 +2,9 @@ package com.example.edmo.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.edmo.annotation.AutoFillList;
+import com.example.edmo.pojo.entity.User;
 import com.example.edmo.service.Interface.OperationLogService;
+import com.example.edmo.service.Interface.WarehouseUserService;
 import com.example.edmo.util.Constant.CodeConstant;
 import com.example.edmo.util.Constant.GoodsConstant;
 import com.example.edmo.util.Jwt.UserContext;
@@ -33,6 +35,9 @@ public class GoodsController {
     WarehouseService warehouseService;
 
     @Resource
+    WarehouseUserService warehouseUserService;
+
+    @Resource
     private OperationLogService operationLogService;
 
     @PostMapping("/save")
@@ -56,7 +61,6 @@ public class GoodsController {
             } catch (Exception e) {
                 throw new GoodsException(CodeConstant.goods, e.getMessage());
             }
-
     }
 
     @PostMapping("/saveListInSameWarehouse")

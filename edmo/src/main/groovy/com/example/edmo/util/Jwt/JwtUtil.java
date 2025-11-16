@@ -26,6 +26,7 @@ public class JwtUtil {
         return JWT.create()
                 .withClaim("id", user.getId())
                 .withClaim("name", user.getName())
+                .withClaim("managedWarehouseIds", user.getManagedWarehouseIds())
                 .withExpiresAt(calendar.getTime())
                 .withIssuedAt(now)
                 .sign(algorithm);

@@ -25,7 +25,7 @@ import java.util.List;
 public class AutoFillAspect {
 
     //execution(* com.example.edmo.controller.*.*(..)) &&
-    @Pointcut(" @annotation(com.example.edmo.annotation.AutoFill)")
+    @Pointcut("(execution(* com.example.edmo.controller.*.*(..))) && (@annotation(com.example.edmo.annotation.AutoFill))")
     public void autoFillPointCut() {
     }
 

@@ -149,11 +149,11 @@ public class WarehouseAdminController {
 
     @PostMapping("/findRelationForUser")
     public Result findRelationForUser(@RequestBody PageDTO pageDTO ) {
-        List<User> users = userService.findUsersByNameLike(pageDTO).getRecords();
+        List<User> users = userService.findUsersByNameLike(pageDTO);
 
         List<UserHaveWarehouseVO> userHaveWarehouseVOS =new ArrayList<>();
         for(User user:users){
-            List<Integer> ids= warehouseUserService.findWarehouseIdByUserId(user.getId());
+            List<Integer> ids= user.getManagedWarehouseIds();
             List<Warehouse> warehouses= warehouseService.findWarehousesById(ids);
             userHaveWarehouseVOS.add(new UserHaveWarehouseVO(user,warehouses));
         }

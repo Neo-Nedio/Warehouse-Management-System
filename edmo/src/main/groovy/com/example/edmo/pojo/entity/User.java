@@ -8,13 +8,12 @@ import com.example.edmo.pojo.DTO.UserDTO;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
 @AllArgsConstructor
-@NoArgsConstructor
 @TableName("user")  // MyBatis-Plus 表名注解
 public class User {
 
@@ -41,8 +40,11 @@ public class User {
     private Integer roleId;
 
     @TableField(exist = false)
-    @JsonIgnore
-    private List<Integer> managedWarehouseIds;
+    private List<Integer> managedWarehouseIds =  new ArrayList<>();
+
+    public User() {
+        this.managedWarehouseIds = new ArrayList<>();
+    }
 
     //queryUser 封装来把密码放入User中，直接传User会导致密码没有被实例化
     public User(UserDTO userDTO) {

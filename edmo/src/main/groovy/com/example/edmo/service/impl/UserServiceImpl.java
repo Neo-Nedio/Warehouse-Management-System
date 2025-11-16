@@ -9,6 +9,7 @@ import com.example.edmo.pojo.DTO.LoginRequest;
 import com.example.edmo.pojo.entity.User;
 import com.example.edmo.mapper.UserMapper;
 import com.example.edmo.service.Interface.UserService;
+import com.example.edmo.service.Interface.WarehouseUserService;
 import jakarta.annotation.Resource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -16,11 +17,15 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
     @Resource
     private UserMapper userMapper;
+
+    @Resource
+    private WarehouseUserService  warehouseUserService;
 
     @Resource
     JavaMailSender sender;
@@ -54,11 +59,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .<User>query()
                 .like("name",name)
                 .orderByDesc("id");
-        return userMapper.selectList(wrapper);
+        return fillManagedWarehouseIds(userMapper.selectList(wrapper));
     }
 
     @Override
-    public Page<User> findUsersByNameLike(PageDTO pageDTO) {
+    public List<User> findUsersByNameLike(PageDTO pageDTO) {
         String name=(String) pageDTO.getParam().get("name");
 
         QueryWrapper<User> wrapper = Wrappers
@@ -70,9 +75,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         page.setSize(pageDTO.getPageSize());
         page.setCurrent(pageDTO.getPageNum());
 
-        return userMapper.selectPage(page,wrapper);
+        List<User> users = userMapper.selectPage(page,wrapper).getRecords();
+
+        return fillManagedWarehouseIds(users);
     }
 
+    //用来邮箱验证
     @Override
     public User findUserByEmail(LoginRequest loginRequest) {
         QueryWrapper<User> wrapper=Wrappers
@@ -87,6 +95,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .<User>query()
                 .in("id", ids)
                 .orderByDesc("id");
-        return userMapper.selectList(wrapper);
+        return fillManagedWarehouseIds(userMapper.selectList(wrapper));
+    }
+
+    //todo
+    private List<User> fillManagedWarehouseIds(List<User> users) {
+        return users.stream()
+                .peek(user -> user.setManagedWarehouseIds(
+                        warehouseUserService.findWarehouseIdByUserId(user.getId())
+                ))
+                .collect(Collectors.toList());
     }
 }

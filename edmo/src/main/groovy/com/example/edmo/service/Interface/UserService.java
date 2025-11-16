@@ -16,7 +16,7 @@ public interface UserService extends IService<User> {
 
     List<User> findUsersByNameLike(String name);
 
-    Page<User> findUsersByNameLike(PageDTO pageDTO);
+    List<User> findUsersByNameLike(PageDTO pageDTO);
 
     User findUserByEmail(LoginRequest loginRequest);
 

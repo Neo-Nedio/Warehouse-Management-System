@@ -1,6 +1,7 @@
 package com.example.edmo.controller;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.edmo.exception.BaseException;
+import com.example.edmo.service.Interface.WarehouseUserService;
 import com.example.edmo.util.Constant.CodeConstant;
 import com.example.edmo.util.Constant.RedisConstant;
 import com.example.edmo.util.Constant.UserConstant;
@@ -19,6 +20,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -31,10 +33,16 @@ public class UserController {
     private UserService userService;
 
     @Resource
+    private WarehouseUserService warehouseUserService;
+
+    @Resource
     private BCryptPasswordEncoder encoder;
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    ObjectMapper  objectMapper;
 
     @PostMapping("/code")
     public Result createCode(@RequestBody LoginRequest loginRequest) {
@@ -105,25 +113,26 @@ public class UserController {
 
 
     private Result sendToken(User user)  {
+        user.setManagedWarehouseIds(warehouseUserService.findWarehouseIdByUserId(user.getId()));
         // 生成token
         String token = JwtUtil.createToken(user);
-
-        //把user放入redis
-        String key = RedisConstant.LOGIN_USER_KEY + token;
-        ObjectMapper objectMapper = new ObjectMapper();
-        String userJson = null;
-        try {
-            userJson = objectMapper.writeValueAsString(user);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-
-        stringRedisTemplate.opsForValue().set(key, userJson, RedisConstant.LOGIN_USER_TTL, TimeUnit.MINUTES);
 
         // 返回结果（不包含密码）
         Map<String, Object> result = new HashMap<>();
         result.put("user", user);
         result.put("token", token);
+
+        //把user放入redis
+        String key = RedisConstant.LOGIN_USER_KEY + token;
+        String userJson = null;
+        try {
+            userJson = objectMapper.writeValueAsString(user);
+        } catch (JsonProcessingException e) {
+            throw new BaseException(401,e.getMessage());
+        }
+
+        stringRedisTemplate.opsForValue().set(key, userJson, RedisConstant.LOGIN_USER_TTL, TimeUnit.MINUTES);
+
         return Result.success(result);
     }
 
@@ -138,8 +147,8 @@ public class UserController {
 
     @PostMapping("/listPage")
     public Result listPage(@RequestBody PageDTO pageDTO) {
-        Page<User> page=userService.findUsersByNameLike(pageDTO);
-        return Result.success(page.getRecords());
+        List<User> list=userService.findUsersByNameLike(pageDTO);
+        return Result.success(list);
     }
 
     @PostMapping("/findById")

@@ -1,6 +1,5 @@
 package com.example.edmo.util.interceptor;
 
-import cn.hutool.core.bean.BeanUtil;
 import com.example.edmo.util.Constant.CodeConstant;
 import com.example.edmo.util.Constant.JwtConstant;
 import com.example.edmo.util.Constant.RedisConstant;
@@ -23,12 +22,6 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class FirstInterceptor implements HandlerInterceptor {
-
-    @Resource
-    private UserService userService;
-
-    @Resource
-    private WarehouseUserService warehouseUserService;
 
     @Resource
     private StringRedisTemplate  stringRedisTemplate;
@@ -55,22 +48,7 @@ public class FirstInterceptor implements HandlerInterceptor {
             String Json = stringRedisTemplate.opsForValue().get(key);
 
             if(Json == null){
-                Integer userId = JwtUtil.getUserId(token);
-                if (userId != null) {
-                    User user = userService.getById(userId);
-                    if (user != null) {
-                        user.setManagedWarehouseIds(warehouseUserService.findWarehouseIdByUserId(userId));
-
-                        //把user放入redis
-                        ObjectMapper objectMapper = new ObjectMapper();
-                        String userJson = objectMapper.writeValueAsString(user);
-
-                        stringRedisTemplate.opsForValue().set(key, userJson, RedisConstant.LOGIN_USER_TTL, TimeUnit.MINUTES);
-
-                        UserContext.setCurrentUser(user);
-                        return true;
-                    }
-                }
+                throw new JwtException(CodeConstant.token,JwtConstant.NULL_LOGIN);
             }else{
                 ObjectMapper objectMapper = new ObjectMapper();
                 User user = objectMapper.readValue(Json, User.class);
@@ -78,10 +56,6 @@ public class FirstInterceptor implements HandlerInterceptor {
                 stringRedisTemplate.expire(key, RedisConstant.LOGIN_USER_TTL, TimeUnit.MINUTES);
                 return true;
             }
-
-
-
-            throw new JwtException(CodeConstant.token,JwtConstant.NULL_USER);
         } catch (Exception e) {
             throw new BaseException(CodeConstant.token,e.getMessage());
         }
