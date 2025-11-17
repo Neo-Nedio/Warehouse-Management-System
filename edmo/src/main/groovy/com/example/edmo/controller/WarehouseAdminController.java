@@ -46,7 +46,7 @@ public class WarehouseAdminController {
         }
     }
 
-    @PostMapping("/mod")
+    @PutMapping("/mod")
     public Result mod(@RequestBody WarehouseDTO warehouseDTO) {
         try {
             if ( warehouseService.updateById(new Warehouse(warehouseDTO))) {
@@ -60,7 +60,7 @@ public class WarehouseAdminController {
     }
 
 
-    @PostMapping("/delete")
+    @DeleteMapping("/delete")
     public Result delete(@RequestParam Integer id) {
         try {
             if (warehouseService.removeById(id)) {
@@ -75,7 +75,7 @@ public class WarehouseAdminController {
 
 
 
-    @PostMapping("/findByNameLike")
+    @GetMapping("/findByNameLike")
     public Result nameLike(@RequestParam String name) {
         return Result.success(warehouseService.findWarehousesByNameLike(name));
     }
@@ -86,13 +86,13 @@ public class WarehouseAdminController {
         return Result.success(page.getRecords());
     }
 
-    @PostMapping("/findById")
+    @GetMapping("/findById")
     public Result findById(@RequestParam Integer id) {
         return Result.success(warehouseService.getById(id));
     }
 
 
-
+    //创建仓库与用户关系
 
     @PostMapping("/saveRelation")
     public Result saveRelation(@RequestBody WarehouseAndUserDTO warehouseAndUserDTO) {
@@ -111,7 +111,7 @@ public class WarehouseAdminController {
         }
     }
 
-    @PostMapping("/modRelation")
+    @PutMapping("/modRelation")
     public Result modRelation(@RequestBody WarehouseAndUserDTO warehouseAndUserDTO) {
         try {
             //检查用户和仓库是不是存在
@@ -129,7 +129,7 @@ public class WarehouseAdminController {
     }
 
 
-    @PostMapping("/deleteRelation")
+    @DeleteMapping("/deleteRelation")
     public Result deleteRelation(@RequestParam Integer userID, @RequestParam Integer warehouseID) {
         try {
             if (warehouseUserService.deleteByWarehouseIdAndUserId(warehouseID, userID)) {
@@ -142,7 +142,7 @@ public class WarehouseAdminController {
         }
     }
 
-    @PostMapping("findRelation")
+    @GetMapping("findRelation")
     public Result findRelation(@RequestParam Integer userID, @RequestParam Integer warehouseID) {
         return Result.success(warehouseUserService.findRelationByWarehouseIdAndUserId(warehouseID, userID));
     }

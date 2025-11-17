@@ -29,7 +29,7 @@ public class AutoFillAspect {
     public void autoFillPointCut() {
     }
 
-    @Pointcut(" @annotation(com.example.edmo.annotation.AutoFillList)")
+    @Pointcut("@annotation(com.example.edmo.annotation.AutoFillList)")
     public void autoFillPointCutList() {
     }
 

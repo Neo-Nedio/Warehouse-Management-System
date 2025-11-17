@@ -23,8 +23,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-//todo 参数校验,实现token的续期与过期
+//todo 参数校验，实现跨域问题
 //todo 检查自动填充加包名为什么不行
+//todo 自定义邮箱注解没有效果
 @RestController
 @RequestMapping("/goods")
 public class GoodsController {
@@ -82,6 +83,7 @@ public class GoodsController {
                     .map(Goods::new)
                     .collect(Collectors.toList());
 
+            //todo
             // 批量插入，ID会自动回填到goodsList中的每个Goods对象
             if (goodsService.saveBatch(goodsList)) {
                 for (int i = 0; i < goodsList.size(); i++) {
@@ -102,7 +104,7 @@ public class GoodsController {
 
     }
 
-    @PostMapping("/mod/message")
+    @PutMapping("/mod/message")
     @AutoFill(value = OperationType.UPDATE)
     public Result modMessage(@RequestBody GoodsDTO goodsDTO) {
         try {
@@ -127,7 +129,7 @@ public class GoodsController {
         }
     }
 
-    @PostMapping("/mod/warehouse")
+    @PutMapping("/mod/warehouse")
     @AutoFill(value = OperationType.UPDATE)
     public Result modWarehouse(@RequestBody GoodsDTO goodsDTO) {
         try {
@@ -151,7 +153,7 @@ public class GoodsController {
         }
     }
 
-    @PostMapping("/delete")
+    @DeleteMapping("/delete")
     @AutoFill(value = OperationType.UPDATE)
     public Result deleteGoods(@RequestBody GoodsDTO goodsDTO) {
         try {
@@ -178,13 +180,13 @@ public class GoodsController {
     //查找，不需要第二级权限
 
     //查询商品，只能查自己管理的库
-    @PostMapping("/findGoodsByID")
+    @GetMapping("/findGoodsByID")
     public Result findGoodsByID(@RequestParam Integer id) {
         Goods goods = goodsService.findGoodsById(id,UserContext.getCurrentUser().getManagedWarehouseIds());
         return Result.success(goods);
     }
 
-    @PostMapping("/findByNameLike")
+    @GetMapping("/findByNameLike")
     public Result findByNameLike(@RequestParam String name) {
         return Result.success(goodsService.findGoodsByNameLike(name,UserContext.getCurrentUser().getManagedWarehouseIds()));
     }
@@ -196,7 +198,7 @@ public class GoodsController {
     }
 
     //根据仓库查找
-    @PostMapping("/findGoodsByWarehouseID")
+    @GetMapping("/findGoodsByWarehouseID")
     public Result findGoodsByWarehouseID(@RequestParam Integer id) {
         return Result.success(goodsService.findGoodsByWarehouseId(id,UserContext.getCurrentUser().getManagedWarehouseIds()));
     }
@@ -206,7 +208,7 @@ public class GoodsController {
         return Result.success(goodsService.findGoodsAllByManagedWarehouseIds(UserContext.getCurrentUser().getManagedWarehouseIds()));
     }
 
-    @PostMapping("/findGoodsByNameLikeInByManagedWarehouseIds")
+    @GetMapping("/findGoodsByNameLikeInByManagedWarehouseIds")
     public Result findGoodsByNameLikeInByManagedWarehouseIds(@RequestParam String name) {
         return Result.success(goodsService.findGoodsByNameLikeInByManagedWarehouseIds(name,UserContext.getCurrentUser().getManagedWarehouseIds()));
     }

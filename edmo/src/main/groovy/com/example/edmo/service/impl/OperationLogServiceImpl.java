@@ -9,13 +9,13 @@ import com.example.edmo.mapper.OperationLogMapper;
 import com.example.edmo.pojo.DTO.GoodsDTO;
 import com.example.edmo.pojo.DTO.OperationLogDTO;
 import com.example.edmo.pojo.DTO.PageDTO;
-import com.example.edmo.pojo.DTO.TimeDTO;
 import com.example.edmo.pojo.entity.Goods;
 import com.example.edmo.pojo.entity.OperationLog;
 import com.example.edmo.service.Interface.OperationLogService;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -140,11 +140,11 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Ope
     }
 
     @Override
-    public List<OperationLog> findByTime(TimeDTO timeDTO) {
+    public List<OperationLog> findByTime(LocalDateTime startTime,LocalDateTime endTime) {
         Wrapper<OperationLog> wrapper =Wrappers
                 .<OperationLog>query()
-                .ge("update_time",timeDTO.getStartTime())
-                .le("update_time",timeDTO.getEndTime());
+                .ge("update_time",startTime)
+                .le("update_time",endTime);
         return operationLogMapper.selectList(wrapper);
     }
 

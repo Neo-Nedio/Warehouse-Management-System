@@ -42,7 +42,8 @@ public class WebConfig implements WebMvcConfigurer {
                         "/user/code",
                         "/user/loginByPassword",
                         "/user/loginByCode",
-                        "/user/updatePassword"
+                        "/user/updatePassword",
+                        "user/refresh"
                 );
 
         //Admin路径权限检查

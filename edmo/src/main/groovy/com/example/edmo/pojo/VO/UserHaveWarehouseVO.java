@@ -18,6 +18,8 @@ public class UserHaveWarehouseVO {
 
     private String email;
 
+    private String phone;
+
     @JsonIgnore  // 输出时忽略（对象→JSON）
     private String password;
 
@@ -33,6 +35,7 @@ public class UserHaveWarehouseVO {
         this.id = user.getId();
         this.name = user.getName();
         this.email = user.getEmail();
+        this.phone = user.getPhone();
         this.password = user.getPassword();
         this.sex = user.getSex();
         this.age = user.getAge();

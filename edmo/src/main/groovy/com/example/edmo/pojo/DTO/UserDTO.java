@@ -1,6 +1,7 @@
 package com.example.edmo.pojo.DTO;
 
 
+import com.example.edmo.annotation.Phone;
 import com.example.edmo.pojo.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,6 +18,9 @@ public class UserDTO {
 
     private String email;
 
+    @Phone
+    private String phone;
+
     private String password;
 
     private Integer sex;
@@ -29,6 +33,7 @@ public class UserDTO {
         this.id = queryUser.getId();
         this.name = queryUser.getName();
         this.email = queryUser.getEmail();
+        this.phone = queryUser.getPhone();
         this.password = queryUser.getPassword();
         this.sex=queryUser.getSex();
         this.age=queryUser.getAge();

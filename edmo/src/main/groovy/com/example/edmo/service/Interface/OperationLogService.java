@@ -5,11 +5,11 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.edmo.pojo.DTO.GoodsDTO;
 import com.example.edmo.pojo.DTO.OperationLogDTO;
 import com.example.edmo.pojo.DTO.PageDTO;
-import com.example.edmo.pojo.DTO.TimeDTO;
 import com.example.edmo.pojo.entity.Goods;
 import com.example.edmo.pojo.entity.OperationLog;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -38,7 +38,7 @@ public interface OperationLogService extends IService<OperationLog> {
 
     List<OperationLog> findByGoodsId(Integer goodsId);
 
-    List<OperationLog> findByTime(TimeDTO timeDTO);
+    List<OperationLog> findByTime(LocalDateTime startTime,LocalDateTime endTime);
 
     List<OperationLog> findByAnyCondition(OperationLogDTO operationLogDTO);
 }

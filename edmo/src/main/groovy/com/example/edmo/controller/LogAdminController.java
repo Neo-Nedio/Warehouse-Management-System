@@ -3,7 +3,6 @@ package com.example.edmo.controller;
 import com.example.edmo.exception.OperationLogException;
 import com.example.edmo.pojo.DTO.OperationLogDTO;
 import com.example.edmo.pojo.DTO.PageDTO;
-import com.example.edmo.pojo.DTO.TimeDTO;
 import com.example.edmo.pojo.VO.UserHavaOperationVO;
 import com.example.edmo.pojo.entity.OperationLog;
 import com.example.edmo.pojo.entity.User;
@@ -14,6 +13,7 @@ import com.example.edmo.util.Constant.OperateTypeConstant;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,7 +49,7 @@ public class LogAdminController {
         return Result.success(operationLogService.findByType(typename,pageDTO).getRecords());
     }
 
-    @PostMapping("/findAllByTypeAndWarehouseId")
+    @GetMapping("/findAllByTypeAndWarehouseId")
     public Result findAllByTypeAndWarehouseId(@RequestParam Integer type,
                                        Integer warehouseId ){
         String typename;
@@ -77,7 +77,7 @@ public class LogAdminController {
         return Result.success(userHavaOperationVOS);
     }
 
-    @PostMapping("/findByGoodsName")
+    @GetMapping("/findByGoodsName")
     public Result findByGoodsName(@RequestParam String name){
         return Result.success(operationLogService.findByGoodsName(name));
     }
@@ -98,9 +98,10 @@ public class LogAdminController {
         return Result.success(operationLogService.findByAnyCondition(operationLogDTO));
     }
 
-    @PostMapping("/findByTime")
-    public Result findByTime(@RequestBody TimeDTO timeDTO){
-        return Result.success(operationLogService.findByTime(timeDTO));
+    @GetMapping("/findByTime")
+    public Result findByTime(@RequestParam LocalDateTime startTime,
+                                LocalDateTime endTime){
+        return Result.success(operationLogService.findByTime(startTime,endTime));
     }
 
     public String getOperateTypeByNumber(int number) {

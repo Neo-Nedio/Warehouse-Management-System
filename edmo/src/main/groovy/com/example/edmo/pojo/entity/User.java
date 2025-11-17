@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.example.edmo.annotation.Phone;
 import com.example.edmo.pojo.DTO.UserDTO;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
@@ -25,6 +26,10 @@ public class User {
 
     @TableField("email")
     private String email;
+
+    @TableField("phone")
+    @Phone
+    private String phone;
 
     @TableField("password")
     @JsonIgnore  // 输出时忽略（对象→JSON）
@@ -50,6 +55,7 @@ public class User {
     public User(UserDTO userDTO) {
         this.name = userDTO.getName();
         this.email = userDTO.getEmail();
+        this.phone = userDTO.getPhone();
         this.password = userDTO.getPassword();
         this.sex= userDTO.getSex();
         this.age= userDTO.getAge();
@@ -60,6 +66,7 @@ public class User {
     public User(UserDTO userDTO, Integer id) {
         this.name = userDTO.getName();
         this.email = userDTO.getEmail();
+        this.phone = userDTO.getPhone();
         this.password = userDTO.getPassword();
         this.sex= userDTO.getSex();
         this.age= userDTO.getAge();

@@ -1,8 +1,12 @@
 package com.example.edmo.controller;
 
-import com.example.edmo.exception.BaseException;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.example.edmo.exception.JwtException;
 import com.example.edmo.service.Interface.WarehouseUserService;
 import com.example.edmo.util.Constant.CodeConstant;
+import com.example.edmo.util.Constant.JwtConstant;
 import com.example.edmo.util.Constant.RedisConstant;
 import com.example.edmo.util.Constant.UserConstant;
 import com.example.edmo.util.Jwt.JwtUtil;
@@ -12,11 +16,13 @@ import com.example.edmo.pojo.DTO.UserDTO;
 import com.example.edmo.pojo.entity.User;
 import com.example.edmo.exception.UserException;
 import com.example.edmo.service.Interface.UserService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.edmo.util.Jwt.UserContext;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -25,7 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-
+@Validated
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -41,15 +47,9 @@ public class UserController {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
-    @Resource
-    ObjectMapper  objectMapper;
-
-    @PostMapping("/code")
-    public Result createCode(@RequestBody LoginRequest loginRequest) {
-
-        String email = loginRequest.getEmail();
-
-        int code=userService.CreatCode(loginRequest);
+    @GetMapping("/code")
+    public Result createCode(@RequestParam  String email) {
+        int code=userService.CreatCode(email);
         if(code==0) throw new UserException(CodeConstant.user,UserConstant.NULL_USER);
 
         //把验证码保存在redis
@@ -62,7 +62,7 @@ public class UserController {
     @PostMapping("/loginByPassword")
     public Result loginByPassword(@RequestBody LoginRequest loginRequest){
         // 根据邮箱查找用户
-        User user=userService.findUserByEmail(loginRequest);
+        User user=userService.findUserByEmail(loginRequest.getEmail());
         //匹配用match
         if (user == null || !encoder.matches(loginRequest.getPassword(),user.getPassword())) {
             throw new UserException(CodeConstant.user,UserConstant.FALSE_EMAIL_OR_PASSWORD);
@@ -86,7 +86,7 @@ public class UserController {
 
         if(code!=redisCode) throw new UserException(CodeConstant.user,UserConstant.FALSE_CODE);
 
-        User user=userService.findUserByEmail(loginRequest);//获取验证码时已经检验用户是否存在
+        User user=userService.findUserByEmail(loginRequest.getEmail());//获取验证码时已经检验用户是否存在
         return sendToken(user);
     }
 
@@ -105,9 +105,44 @@ public class UserController {
         if(code!=redisCode) throw new UserException(CodeConstant.user,UserConstant.FALSE_CODE);
 
         String password = loginRequest.getPassword();
-        User user=userService.findUserByEmail(loginRequest);
+        User user=userService.findUserByEmail(loginRequest.getEmail());
         user.setPassword(encoder.encode(password));
         mod(new UserDTO(user));
+        return Result.success();
+    }
+
+    @PostMapping("/refresh")
+    public Result refresh(@RequestParam String RefreshToken) {
+        try {
+            if (RefreshToken == null ) throw new JwtException(CodeConstant.token,JwtConstant.NULL_TOKEN);
+
+            // 验证Refresh Token
+            Algorithm algorithm = Algorithm.HMAC256(JwtConstant.SECRET_KEY);
+            DecodedJWT jwt = JWT.require(algorithm).build().verify(RefreshToken);
+
+            Integer userId = jwt.getClaim("id").asInt();
+
+            String key = RedisConstant.LOGIN_USER_KEY + userId;
+
+            // 检查Redis中的Refresh Token是否匹配
+            String storedRefreshToken = stringRedisTemplate.opsForValue().get(key);
+
+            if (storedRefreshToken == null || !storedRefreshToken.equals(RefreshToken)) {
+                throw new UserException(CodeConstant.user,UserConstant.NULL_LOGIN);
+            }
+
+            // 获取用户信息
+            User user = userService.getById(userId);
+            if (user == null) throw new UserException(CodeConstant.user,UserConstant.NULL_USER);
+            return sendToken(user);
+        }catch (Exception e) {
+            throw new UserException(CodeConstant.user,e.getMessage());
+        }
+    }
+
+    @GetMapping("logOut")
+    public Result logout() {
+        stringRedisTemplate.delete(RedisConstant.LOGIN_USER_KEY + UserContext.getCurrentUser().getId());
         return Result.success();
     }
 
@@ -115,23 +150,20 @@ public class UserController {
     private Result sendToken(User user)  {
         user.setManagedWarehouseIds(warehouseUserService.findWarehouseIdByUserId(user.getId()));
         // 生成token
-        String token = JwtUtil.createToken(user);
+        String refreshToken = JwtUtil.createToken(user, JwtConstant.REFRESH_TOKEN_EXPIRE);
+        String AccessToken = JwtUtil.createToken(user, JwtConstant.ACCESS_TOKEN_EXPIRE);
 
-        // 返回结果（不包含密码）
+        // 返回双token和user（不包含密码）
         Map<String, Object> result = new HashMap<>();
         result.put("user", user);
-        result.put("token", token);
+        result.put("tokens", Map.of(
+                "accessToken",AccessToken ,
+                "refreshToken", refreshToken
+        ));
 
-        //把user放入redis
-        String key = RedisConstant.LOGIN_USER_KEY + token;
-        String userJson = null;
-        try {
-            userJson = objectMapper.writeValueAsString(user);
-        } catch (JsonProcessingException e) {
-            throw new BaseException(401,e.getMessage());
-        }
-
-        stringRedisTemplate.opsForValue().set(key, userJson, RedisConstant.LOGIN_USER_TTL, TimeUnit.MINUTES);
+        //通过 AccessToken 为key 把 refreshToken 放入 redis
+        String key = RedisConstant.LOGIN_USER_KEY + user.getId();
+        stringRedisTemplate.opsForValue().set(key, refreshToken, RedisConstant.LOGIN_USER_TTL, TimeUnit.MINUTES);
 
         return Result.success(result);
     }
@@ -140,25 +172,27 @@ public class UserController {
 
 
     //普通权限
-    @PostMapping("/findByNameLike")
+    @GetMapping("/findByNameLike")
     public Result nameLike(@RequestParam String name) {
         return Result.success(userService.findUsersByNameLike(name));
     }
 
     @PostMapping("/listPage")
-    public Result listPage(@RequestBody PageDTO pageDTO) {
+    public Result listPage(@RequestBody  PageDTO pageDTO) {
         List<User> list=userService.findUsersByNameLike(pageDTO);
         return Result.success(list);
     }
 
-    @PostMapping("/findById")
-    public Result findById(@RequestParam Integer id) {
-        return Result.success(userService.getById(id));
+    @GetMapping("/findById")
+    public Result findById(@Min(value = 1, message = "ID必须大于0") @RequestParam Integer id) {
+       User user =userService.getById(id);
+       user.setManagedWarehouseIds(warehouseUserService.findWarehouseIdByUserId(user.getId()));
+       return Result.success(user);
     }
 
     //管理员权限
     @PostMapping("/save")
-    public Result save(@RequestBody UserDTO userDTO) {
+    public Result save(@Valid @RequestBody UserDTO userDTO) {
         try {
             userDTO.setPassword(encoder.encode(userDTO.getPassword()));
             User user = new User(userDTO);
@@ -173,7 +207,7 @@ public class UserController {
         }
     }
 
-    @PostMapping("/mod")
+    @PutMapping("/mod")
     public Result mod(@RequestBody UserDTO userDTO) {
         try {
             User user = new User(userDTO, userDTO.getId());
@@ -188,7 +222,7 @@ public class UserController {
     }
 
 
-    @PostMapping("/delete")
+    @DeleteMapping("/delete")
     public Result delete(@RequestParam Integer id) {
         try {
             if (userService.removeById(id))  {

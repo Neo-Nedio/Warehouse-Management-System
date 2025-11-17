@@ -32,10 +32,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
 
     @Override
-    public int CreatCode(LoginRequest loginRequest) {
-        if(findUserByEmail( loginRequest)==null) return 0;
+    public int CreatCode(String email) {
+        if(findUserByEmail( email)==null) return 0;
 
-        String email = loginRequest.getEmail();
 
         Random random = new Random();
         int code = random.nextInt(900000)+100000;
@@ -43,8 +42,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         //设置邮件标题
         message.setSubject("验证码");
         //设置邮件内容
-        message.setText("验证码是"+code);
-        message.setText("有效期为2分钟，请尽快使用");
+        message.setText("验证码是" + code + "，有效期为2分钟，请尽快使用");
         //设置邮件发送给谁，可以多个，这里就发给你的QQ邮箱
         message.setTo(email);
         //邮件发送者，这里要与配置文件中的保持一致
@@ -82,10 +80,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     //用来邮箱验证
     @Override
-    public User findUserByEmail(LoginRequest loginRequest) {
+    public User findUserByEmail(String email) {
         QueryWrapper<User> wrapper=Wrappers
                 .<User>query()
-                .eq("email",loginRequest.getEmail());
+                .eq("email",email);
         return userMapper.selectOne(wrapper);
     }
 
