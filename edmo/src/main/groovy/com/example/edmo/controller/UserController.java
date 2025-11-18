@@ -19,7 +19,8 @@ import com.example.edmo.service.Interface.UserService;
 import com.example.edmo.util.Jwt.UserContext;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Positive;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.validation.annotation.Validated;
@@ -48,7 +49,7 @@ public class UserController {
     private StringRedisTemplate stringRedisTemplate;
 
     @GetMapping("/code")
-    public Result createCode(@RequestParam  String email) {
+    public Result createCode(@Email @RequestParam  String email) {
         int code=userService.CreatCode(email);
         if(code==0) throw new UserException(CodeConstant.user,UserConstant.NULL_USER);
 
@@ -60,7 +61,7 @@ public class UserController {
     }
 
     @PostMapping("/loginByPassword")
-    public Result loginByPassword(@RequestBody LoginRequest loginRequest){
+    public Result loginByPassword(@Valid @RequestBody LoginRequest loginRequest){
         // 根据邮箱查找用户
         User user=userService.findUserByEmail(loginRequest.getEmail());
         //匹配用match
@@ -71,7 +72,7 @@ public class UserController {
     }
 
     @PostMapping("/loginByCode")
-    public Result loginByCode(@RequestBody LoginRequest loginRequest) {
+    public Result loginByCode(@Valid @RequestBody LoginRequest loginRequest) {
 
         String email = loginRequest.getEmail();
         int code = loginRequest.getCode();
@@ -91,7 +92,7 @@ public class UserController {
     }
 
     @PostMapping("/updatePassword")
-    public Result updatePassword(@RequestBody LoginRequest loginRequest) {
+    public Result updatePassword(@Valid @RequestBody LoginRequest loginRequest) {
         String email = loginRequest.getEmail();
         int code = loginRequest.getCode();
 
@@ -184,7 +185,7 @@ public class UserController {
     }
 
     @GetMapping("/findById")
-    public Result findById(@Min(value = 1, message = "ID必须大于0") @RequestParam Integer id) {
+    public Result findById(@Positive( message = "ID必须大于0") @RequestParam Integer id) {
        User user =userService.getById(id);
        user.setManagedWarehouseIds(warehouseUserService.findWarehouseIdByUserId(user.getId()));
        return Result.success(user);
@@ -208,7 +209,7 @@ public class UserController {
     }
 
     @PutMapping("/mod")
-    public Result mod(@RequestBody UserDTO userDTO) {
+    public Result mod(@Valid @RequestBody UserDTO userDTO) {
         try {
             User user = new User(userDTO, userDTO.getId());
             if (userService.updateById(user)) {
@@ -223,7 +224,7 @@ public class UserController {
 
 
     @DeleteMapping("/delete")
-    public Result delete(@RequestParam Integer id) {
+    public Result delete(@Positive( message = "ID必须大于0") @RequestParam Integer id) {
         try {
             if (userService.removeById(id))  {
                 return Result.success();

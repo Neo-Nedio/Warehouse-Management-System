@@ -2,6 +2,7 @@ package com.example.edmo.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.edmo.util.Constant.CodeConstant;
+import com.example.edmo.util.Constant.ValidationConstant;
 import com.example.edmo.util.Constant.WarehouseConstant;
 import com.example.edmo.exception.WarehouseException;
 import com.example.edmo.pojo.DTO.PageDTO;
@@ -16,11 +17,18 @@ import com.example.edmo.service.Interface.UserService;
 import com.example.edmo.service.Interface.WarehouseService;
 import com.example.edmo.service.Interface.WarehouseUserService;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
+@Validated
 @RestController
 @RequestMapping("/warehouse/admin")
 public class WarehouseAdminController {
@@ -34,7 +42,7 @@ public class WarehouseAdminController {
     private UserService userService;
 
     @PostMapping("/save")
-    public Result save(@RequestBody WarehouseDTO warehouseDTO) {
+    public Result save(@Valid @RequestBody WarehouseDTO warehouseDTO) {
         try {
             if ( warehouseService.save(new Warehouse(warehouseDTO))) {
                 return Result.success();
@@ -47,7 +55,7 @@ public class WarehouseAdminController {
     }
 
     @PutMapping("/mod")
-    public Result mod(@RequestBody WarehouseDTO warehouseDTO) {
+    public Result mod(@Valid @RequestBody WarehouseDTO warehouseDTO) {
         try {
             if ( warehouseService.updateById(new Warehouse(warehouseDTO))) {
                 return Result.success();
@@ -61,7 +69,7 @@ public class WarehouseAdminController {
 
 
     @DeleteMapping("/delete")
-    public Result delete(@RequestParam Integer id) {
+    public Result delete(@Positive(message = ValidationConstant.ID) @RequestParam Integer id) {
         try {
             if (warehouseService.removeById(id)) {
                 return Result.success();
@@ -87,7 +95,7 @@ public class WarehouseAdminController {
     }
 
     @GetMapping("/findById")
-    public Result findById(@RequestParam Integer id) {
+    public Result findById(@Positive(message = ValidationConstant.ID) @RequestParam Integer id) {
         return Result.success(warehouseService.getById(id));
     }
 
@@ -95,24 +103,28 @@ public class WarehouseAdminController {
     //创建仓库与用户关系
 
     @PostMapping("/saveRelation")
-    public Result saveRelation(@RequestBody WarehouseAndUserDTO warehouseAndUserDTO) {
+    public Result saveRelation(@Valid @RequestBody WarehouseAndUserDTO warehouseAndUserDTO) {
         try {
             //检查用户和仓库是不是存在
-            if(userService.getById(warehouseAndUserDTO.getUserId())==null || warehouseService.getById(warehouseAndUserDTO.getWarehouseId())==null)
+            if(userService.getById(warehouseAndUserDTO.getUserId()) == null ||
+                    warehouseService.getById(warehouseAndUserDTO.getWarehouseId()) == null) {
                 throw new WarehouseException(CodeConstant.warehouse, WarehouseConstant.NULL_WAREHOUSE_OR_USER);
+            }
 
-            if ( warehouseUserService.save(new WarehouseAndUser(warehouseAndUserDTO))) {
-                    return Result.success();
-                } else {
-                    throw new WarehouseException(CodeConstant.warehouse, WarehouseConstant.FALSE_SAVE);
-                }
+            if (warehouseUserService.save(new WarehouseAndUser(warehouseAndUserDTO))) {
+                return Result.success();
+            } else {
+                throw new WarehouseException(CodeConstant.warehouse, WarehouseConstant.FALSE_SAVE);
+            }
+        } catch (DuplicateKeyException e) {
+            throw new WarehouseException(CodeConstant.warehouse, WarehouseConstant.FALSE_SAVE);
         } catch (Exception e) {
             throw new WarehouseException(CodeConstant.warehouse, e.getMessage());
         }
     }
 
     @PutMapping("/modRelation")
-    public Result modRelation(@RequestBody WarehouseAndUserDTO warehouseAndUserDTO) {
+    public Result modRelation(@Valid @RequestBody WarehouseAndUserDTO warehouseAndUserDTO) {
         try {
             //检查用户和仓库是不是存在
             if(userService.getById(warehouseAndUserDTO.getUserId())==null || warehouseService.getById(warehouseAndUserDTO.getWarehouseId())==null)
@@ -130,7 +142,8 @@ public class WarehouseAdminController {
 
 
     @DeleteMapping("/deleteRelation")
-    public Result deleteRelation(@RequestParam Integer userID, @RequestParam Integer warehouseID) {
+    public Result deleteRelation(@Positive(message = ValidationConstant.ID) @RequestParam Integer userID,
+                                 @Positive(message = ValidationConstant.ID) @RequestParam Integer warehouseID) {
         try {
             if (warehouseUserService.deleteByWarehouseIdAndUserId(warehouseID, userID)) {
                 return Result.success();
@@ -143,7 +156,8 @@ public class WarehouseAdminController {
     }
 
     @GetMapping("findRelation")
-    public Result findRelation(@RequestParam Integer userID, @RequestParam Integer warehouseID) {
+    public Result findRelation(@Positive(message = ValidationConstant.ID) @RequestParam Integer userID,
+                               @Positive(message = ValidationConstant.ID) @RequestParam Integer warehouseID) {
         return Result.success(warehouseUserService.findRelationByWarehouseIdAndUserId(warehouseID, userID));
     }
 

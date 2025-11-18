@@ -7,6 +7,7 @@ import com.example.edmo.service.Interface.OperationLogService;
 import com.example.edmo.service.Interface.WarehouseUserService;
 import com.example.edmo.util.Constant.CodeConstant;
 import com.example.edmo.util.Constant.GoodsConstant;
+import com.example.edmo.util.Constant.ValidationConstant;
 import com.example.edmo.util.Jwt.UserContext;
 import com.example.edmo.annotation.AutoFill;
 import com.example.edmo.enumeration.OperationType;
@@ -17,15 +18,18 @@ import com.example.edmo.pojo.entity.Goods;
 import com.example.edmo.service.Interface.GoodsService;
 import com.example.edmo.service.Interface.WarehouseService;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-//todo 参数校验，实现跨域问题
-//todo 检查自动填充加包名为什么不行
-//todo 自定义邮箱注解没有效果
+//todo 进行一次检查，实现跨域问题
+//todo 唯独code进行参数校验不能为空
+@Validated
 @RestController
 @RequestMapping("/goods")
 public class GoodsController {
@@ -43,7 +47,7 @@ public class GoodsController {
 
     @PostMapping("/save")
     @AutoFill(value = OperationType.INSERT)
-    public Result saveGoods(@RequestBody GoodsDTO goodsDTO) {
+    public Result saveGoods(@Valid @RequestBody GoodsDTO goodsDTO) {
         try {
             if( warehouseService.getById(goodsDTO.getWarehouseId())==null)
                 throw new GoodsException(CodeConstant.goods,GoodsConstant.NULL_WAREHOUSE);
@@ -66,7 +70,7 @@ public class GoodsController {
 
     @PostMapping("/saveListInSameWarehouse")
     @AutoFillList(value = OperationType.INSERT)
-    public Result saveGoodsListInSameWarehouse(@RequestBody List<GoodsDTO> goodsDTOList) {
+    public Result saveGoodsListInSameWarehouse(@Valid @RequestBody List<GoodsDTO> goodsDTOList) {
         try {
             //验证
             Integer firstWarehouseId = goodsDTOList.get(0).getWarehouseId();
@@ -106,7 +110,7 @@ public class GoodsController {
 
     @PutMapping("/mod/message")
     @AutoFill(value = OperationType.UPDATE)
-    public Result modMessage(@RequestBody GoodsDTO goodsDTO) {
+    public Result modMessage(@Valid @RequestBody GoodsDTO goodsDTO) {
         try {
             Goods goods = goodsService.getById(goodsDTO.getId());
             if(goods==null)
@@ -131,7 +135,7 @@ public class GoodsController {
 
     @PutMapping("/mod/warehouse")
     @AutoFill(value = OperationType.UPDATE)
-    public Result modWarehouse(@RequestBody GoodsDTO goodsDTO) {
+    public Result modWarehouse(@Valid @RequestBody GoodsDTO goodsDTO) {
         try {
             Goods goods = goodsService.getById(goodsDTO.getId());
             if(goods==null)
@@ -155,7 +159,7 @@ public class GoodsController {
 
     @DeleteMapping("/delete")
     @AutoFill(value = OperationType.UPDATE)
-    public Result deleteGoods(@RequestBody GoodsDTO goodsDTO) {
+    public Result deleteGoods(@Valid @RequestBody GoodsDTO goodsDTO) {
         try {
             Goods goods = goodsService.getById(goodsDTO.getId());
             if(goods==null || goods.getStatus()==0)
@@ -181,7 +185,7 @@ public class GoodsController {
 
     //查询商品，只能查自己管理的库
     @GetMapping("/findGoodsByID")
-    public Result findGoodsByID(@RequestParam Integer id) {
+    public Result findGoodsByID(@Positive(message = ValidationConstant.ID) @RequestParam Integer id) {
         Goods goods = goodsService.findGoodsById(id,UserContext.getCurrentUser().getManagedWarehouseIds());
         return Result.success(goods);
     }
@@ -199,7 +203,7 @@ public class GoodsController {
 
     //根据仓库查找
     @GetMapping("/findGoodsByWarehouseID")
-    public Result findGoodsByWarehouseID(@RequestParam Integer id) {
+    public Result findGoodsByWarehouseID(@Positive(message = ValidationConstant.ID) @RequestParam Integer id) {
         return Result.success(goodsService.findGoodsByWarehouseId(id,UserContext.getCurrentUser().getManagedWarehouseIds()));
     }
 
@@ -214,7 +218,7 @@ public class GoodsController {
     }
 
     @PostMapping("/findGoodsByAnyCondition")
-    public Result findGoodsByAnyCondition(@RequestBody GoodsDTO goodsDTO) {
+    public Result findGoodsByAnyCondition(@Valid @RequestBody GoodsDTO goodsDTO) {
         return Result.success(goodsService.findGoodsByAnyCondition(goodsDTO,UserContext.getCurrentUser().getManagedWarehouseIds()));
     }
 }

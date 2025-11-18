@@ -6,7 +6,9 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.example.edmo.annotation.Phone;
 import com.example.edmo.pojo.DTO.UserDTO;
+import com.example.edmo.util.Constant.ValidationConstant;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -18,13 +20,16 @@ import java.util.List;
 @TableName("user")  // MyBatis-Plus 表名注解
 public class User {
 
-    @TableId(type = IdType.AUTO)  // MyBatis-Plus 主键注解
+    @TableId(type = IdType.AUTO)// MyBatis-Plus 主键注解
+    @Positive(message = ValidationConstant.ID)
     private Integer id;
 
     @TableField("name")
+    @Size(min =2,max = 10,message = ValidationConstant.NAME)
     private String name;
 
     @TableField("email")
+    @Email(message = ValidationConstant.EMAIL)
     private String email;
 
     @TableField("phone")
@@ -33,15 +38,22 @@ public class User {
 
     @TableField("password")
     @JsonIgnore  // 输出时忽略（对象→JSON）
+    @Size(min =2,max = 10,message = ValidationConstant.PASSWORD)
     private String password;
 
     @TableField("sex")
+    @Min(value = 0,message = ValidationConstant.SEX)
+    @Max(value = 1,message = ValidationConstant.SEX)
     private Integer sex;
 
     @TableField("age")
+    @Min(value = 16,message = ValidationConstant.AGE_MIN)
+    @Max(value = 16,message = ValidationConstant.AGE_MAX)
     private Integer age;
 
     @TableField("roleId")
+    @Min(value = 1,message = ValidationConstant.ROLE_MIN)
+    @Max(value = 1,message = ValidationConstant.ROLE_MAX)
     private Integer roleId;
 
     @TableField(exist = false)

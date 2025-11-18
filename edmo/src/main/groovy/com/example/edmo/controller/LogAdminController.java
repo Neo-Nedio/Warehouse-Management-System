@@ -10,13 +10,19 @@ import com.example.edmo.service.Interface.OperationLogService;
 import com.example.edmo.service.Interface.UserService;
 import com.example.edmo.util.Constant.CodeConstant;
 import com.example.edmo.util.Constant.OperateTypeConstant;
+import com.example.edmo.util.Constant.ValidationConstant;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Positive;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Validated
 @RestController
 @RequestMapping("/log")
 public class LogAdminController {
@@ -51,7 +57,7 @@ public class LogAdminController {
 
     @GetMapping("/findAllByTypeAndWarehouseId")
     public Result findAllByTypeAndWarehouseId(@RequestParam Integer type,
-                                       Integer warehouseId ){
+                                      @Positive(message = ValidationConstant.ID) Integer warehouseId ){
         String typename;
         if(type>=1 && type<=4)  typename=getOperateTypeByNumber(type);
         else throw new OperationLogException(CodeConstant.operationLog,OperateTypeConstant.FALSE_TYPE);
@@ -61,7 +67,7 @@ public class LogAdminController {
 
 
     @GetMapping("/findByWarehouseId/{warehouseId}")
-    public Result findByWarehouseId(@PathVariable Integer warehouseId){
+    public Result findByWarehouseId(@PathVariable @Positive(message = ValidationConstant.ID) Integer warehouseId){
         return Result.success(operationLogService.findByWarehouseId(warehouseId));
     }
 
@@ -78,17 +84,17 @@ public class LogAdminController {
     }
 
     @GetMapping("/findByGoodsName")
-    public Result findByGoodsName(@RequestParam String name){
+    public Result findByGoodsName(@RequestParam @Positive(message = ValidationConstant.ID) String name){
         return Result.success(operationLogService.findByGoodsName(name));
     }
 
     @GetMapping("/findByGoodsId/{goodsId}")
-    public Result findByGoodsId(@PathVariable Integer goodsId){
+    public Result findByGoodsId(@PathVariable @Positive(message = ValidationConstant.ID) Integer goodsId){
         return Result.success(operationLogService.findByGoodsId(goodsId));
     }
 
     @PostMapping("/findByAnyCondition")
-    public Result findByAnyCondition(@RequestBody OperationLogDTO  operationLogDTO) {
+    public Result findByAnyCondition(@Valid @RequestBody OperationLogDTO  operationLogDTO) {
         int type = Integer.parseInt(operationLogDTO.getOperateType());
         String typename;
         if(type>=1 && type<=4)  typename=getOperateTypeByNumber(type);
@@ -99,8 +105,8 @@ public class LogAdminController {
     }
 
     @GetMapping("/findByTime")
-    public Result findByTime(@RequestParam LocalDateTime startTime,
-                                LocalDateTime endTime){
+    public Result findByTime(@RequestParam @Past(message = ValidationConstant.TIME) LocalDateTime startTime,
+                                           @Past(message = ValidationConstant.TIME) LocalDateTime endTime){
         return Result.success(operationLogService.findByTime(startTime,endTime));
     }
 
