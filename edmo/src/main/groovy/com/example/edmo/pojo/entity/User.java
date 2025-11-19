@@ -48,17 +48,18 @@ public class User {
 
     @TableField("age")
     @Min(value = 16,message = ValidationConstant.AGE_MIN)
-    @Max(value = 16,message = ValidationConstant.AGE_MAX)
+    @Max(value = 120,message = ValidationConstant.AGE_MAX)
     private Integer age;
 
     @TableField("roleId")
     @Min(value = 1,message = ValidationConstant.ROLE_MIN)
-    @Max(value = 1,message = ValidationConstant.ROLE_MAX)
+    @Max(value = 3,message = ValidationConstant.ROLE_MAX)
     private Integer roleId;
 
     @TableField(exist = false)
     private List<Integer> managedWarehouseIds =  new ArrayList<>();
 
+    //todo开始时装配，防止出现空指针问题
     public User() {
         this.managedWarehouseIds = new ArrayList<>();
     }

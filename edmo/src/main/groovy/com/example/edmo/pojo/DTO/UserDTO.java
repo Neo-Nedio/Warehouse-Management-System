@@ -34,11 +34,11 @@ public class UserDTO {
     private Integer sex;
 
     @Min(value = 16,message = ValidationConstant.AGE_MIN)
-    @Max(value = 16,message = ValidationConstant.AGE_MAX)
+    @Max(value = 120,message = ValidationConstant.AGE_MAX)
     private Integer age;
 
     @Min(value = 1,message = ValidationConstant.ROLE_MIN)
-    @Max(value = 1,message = ValidationConstant.ROLE_MAX)
+    @Max(value = 3,message = ValidationConstant.ROLE_MAX)
     private Integer roleId;
 
     public UserDTO(User queryUser) {

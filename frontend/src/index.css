@@ -1,0 +1,266 @@
+/* 全局样式 */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* 点击波纹效果 */
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transform: translate(-50%, -50%);
+  transition: width 0.4s ease, height 0.4s ease, opacity 0.4s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.btn:active::before {
+  width: 300px;
+  height: 300px;
+  opacity: 1;
+}
+
+/* 点击阴影效果（移除缩放避免抖动） */
+.btn:active {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  opacity: 0.9;
+}
+
+.btn-primary {
+  background-color: #1890ff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #40a9ff;
+}
+
+.btn-danger {
+  background-color: #ff4d4f;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #ff7875;
+}
+
+.btn-success {
+  background-color: #52c41a;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #73d13d;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #1890ff;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.table th,
+.table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.table th {
+  background-color: #fafafa;
+  font-weight: 500;
+}
+
+.table tr {
+  transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background-color: #fafafa;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* 确保 transition-group 不影响表格布局 */
+.table tbody {
+  display: table-row-group;
+}
+
+.table tbody > * {
+  display: table-row;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.error-message {
+  color: #ff4d4f;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideIn 0.3s ease;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* 输入框焦点动画 */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+/* 输入框点击效果（移除缩放避免抖动） */
+.form-group input:active,
+.form-group select:active,
+.form-group textarea:active {
+  border-color: #1890ff;
+  transition: border-color 0.1s ease;
+}
+
+/* 成功/错误消息动画 */
+.error-message,
+.success-message {
+  animation: fadeIn 0.3s ease;
+}
+
+/* 卡片动画 */
+.card {
+  animation: fadeIn 0.4s ease;
+}
+
+/* 卡片点击效果（移除缩放避免抖动） */
+.card:active {
+  opacity: 0.95;
+  transition: opacity 0.1s ease;
+}
+
+/* 表格行点击效果（移除缩放避免抖动） */
+.table tbody tr {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.table tbody tr:active {
+  background-color: #e6f7ff;
+}
+
+/* 链接点击效果（移除缩放避免抖动） */
+a, router-link {
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+a:active, router-link:active {
+  opacity: 0.8;
+}
+
+/* 菜单卡片点击效果（移除缩放避免抖动） */
+.menu-card:active {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  opacity: 0.95;
+}
+
+/* 模态框按钮点击效果（移除缩放避免抖动） */
+.modal-actions .btn:active {
+  opacity: 0.85;
+}
+
+/* 搜索栏输入框点击效果（移除缩放避免抖动） */
+.search-bar input:active,
+.search-bar select:active {
+  border-color: #1890ff;
+  transition: border-color 0.1s ease;
+}
+
+/* 分页按钮点击效果（移除缩放避免抖动） */
+.pagination-controls .btn:active {
+  opacity: 0.8;
+}
+
+/* 通用点击反馈（移除缩放避免抖动） */
+.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.clickable:active {
+  opacity: 0.8;
+}

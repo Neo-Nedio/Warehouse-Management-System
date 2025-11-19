@@ -8,7 +8,6 @@ import java.util.HashMap;
 
 @Data
 @AllArgsConstructor
-@NoArgsConstructor
 public class PageDTO {
     static int page_Size = 20;
     static int page_Num = 1;
@@ -17,4 +16,10 @@ public class PageDTO {
     int pageNum = page_Num;
 
     private HashMap param;
+
+
+    public PageDTO() {
+        this.param = new HashMap<>();
+    }
+
 }

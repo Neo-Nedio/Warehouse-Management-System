@@ -95,11 +95,23 @@ public class LogAdminController {
 
     @PostMapping("/findByAnyCondition")
     public Result findByAnyCondition(@Valid @RequestBody OperationLogDTO  operationLogDTO) {
-        int type = Integer.parseInt(operationLogDTO.getOperateType());
-        String typename;
-        if(type>=1 && type<=4)  typename=getOperateTypeByNumber(type);
-        else throw new OperationLogException(CodeConstant.operationLog,OperateTypeConstant.FALSE_TYPE);
-        operationLogDTO.setOperateType(typename);
+        //todo 检查 operateType 是否为空或空字符串
+        if (operationLogDTO.getOperateType() == null || operationLogDTO.getOperateType().trim().isEmpty()) {
+            // 如果没有操作类型，直接使用 DTO 中的其他条件查询
+            return Result.success(operationLogService.findByAnyCondition(operationLogDTO));
+        }
+        
+        // 如果有操作类型，转换为对应的类型名称
+        try {
+            int type = Integer.parseInt(operationLogDTO.getOperateType());
+            String typename;
+            if(type>=1 && type<=4)  typename=getOperateTypeByNumber(type);
+            else throw new OperationLogException(CodeConstant.operationLog,OperateTypeConstant.FALSE_TYPE);
+            operationLogDTO.setOperateType(typename);
+        } catch (NumberFormatException e) {
+            // 如果无法解析为整数，可能是已经是类型名称（如 "ADD"），直接使用
+            // 不做转换
+        }
 
         return Result.success(operationLogService.findByAnyCondition(operationLogDTO));
     }

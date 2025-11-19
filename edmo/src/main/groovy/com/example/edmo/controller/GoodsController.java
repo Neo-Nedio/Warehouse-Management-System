@@ -24,7 +24,9 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 //todo 进行一次检查，实现跨域问题
@@ -198,7 +200,14 @@ public class GoodsController {
     @PostMapping("/listPage")
     public Result listPage(@RequestBody PageDTO pageDTO) {
         Page<Goods> page=goodsService.findGoodsByNameLike(pageDTO,UserContext.getCurrentUser().getManagedWarehouseIds());
-        return Result.success(page.getRecords());
+        //todo 返回分页信息，包含数据列表和分页信息
+        Map<String, Object> result = new HashMap<>();
+        result.put("records", page.getRecords());
+        result.put("total", page.getTotal());
+        result.put("pages", page.getPages());
+        result.put("current", page.getCurrent());
+        result.put("size", page.getSize());
+        return Result.success(result);
     }
 
     //根据仓库查找

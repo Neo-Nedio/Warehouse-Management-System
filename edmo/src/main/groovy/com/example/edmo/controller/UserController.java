@@ -56,7 +56,6 @@ public class UserController {
         //把验证码保存在redis
         stringRedisTemplate.opsForValue().set(RedisConstant.LOGIN_CODE_KEY +email,String.valueOf(code),RedisConstant.LOGIN_CODE_TTL, TimeUnit.MINUTES);
 
-
         return Result.success();
     }
 
@@ -119,20 +118,11 @@ public class UserController {
         try {
             if (RefreshToken == null ) throw new JwtException(CodeConstant.token,JwtConstant.NULL_TOKEN);
 
-            // 验证Refresh Token
+            // 验证Refresh Token（只验证JWT本身，不验证Redis）
             Algorithm algorithm = Algorithm.HMAC256(JwtConstant.SECRET_KEY);
             DecodedJWT jwt = JWT.require(algorithm).build().verify(RefreshToken);
 
             Integer userId = jwt.getClaim("id").asInt();
-
-            String key = RedisConstant.LOGIN_USER_KEY + userId;
-
-            // 检查Redis中的Refresh Token是否匹配
-            String storedRefreshToken = stringRedisTemplate.opsForValue().get(key);
-
-            if (storedRefreshToken == null || !storedRefreshToken.equals(RefreshToken)) {
-                throw new UserException(CodeConstant.user,UserConstant.NULL_LOGIN);
-            }
 
             // 获取用户信息
             User user = userService.getById(userId);
@@ -145,7 +135,7 @@ public class UserController {
 
     @GetMapping("logOut")
     public Result logout() {
-        stringRedisTemplate.delete(RedisConstant.LOGIN_USER_KEY + UserContext.getCurrentUser().getId());
+        // 不再需要删除Redis中的refreshToken，因为不再存储
         return Result.success();
     }
 
@@ -164,9 +154,7 @@ public class UserController {
                 "refreshToken", refreshToken
         ));
 
-        //通过 AccessToken 为key 把 refreshToken 放入 redis
-        String key = RedisConstant.LOGIN_USER_KEY + user.getId();
-        stringRedisTemplate.opsForValue().set(key, refreshToken, RedisConstant.LOGIN_USER_TTL, TimeUnit.MINUTES);
+        // 不再将refreshToken存储到Redis，只使用JWT本身验证
 
         return Result.success(result);
     }

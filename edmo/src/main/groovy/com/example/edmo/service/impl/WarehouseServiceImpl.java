@@ -28,12 +28,17 @@ public class WarehouseServiceImpl extends ServiceImpl<WarehouseAdminMapper, Ware
 
     @Override
     public Page<Warehouse> findWarehousesByNameLike(PageDTO pageDTO) {
-        String name=(String) pageDTO.getParam().get("name");
-
         QueryWrapper<Warehouse> wrapper = Wrappers
                 .<Warehouse>query()
-                .like("name",name)
                 .orderByDesc("id");
+        
+        //todo 如果param不为null且包含name参数，则添加like条件
+        if (pageDTO.getParam() != null && pageDTO.getParam().containsKey("name")) {
+            String name = (String) pageDTO.getParam().get("name");
+            if (name != null && !name.isEmpty()) {
+                wrapper.like("name", name);
+            }
+        }
 
         Page<Warehouse> page=new Page<>();
         page.setSize(pageDTO.getPageSize());

@@ -29,26 +29,23 @@ public class GoodsDTO {
     @Positive(message = ValidationConstant.ID)
     private Integer warehouseId;
 
-    @Past(message = ValidationConstant.TIME)
+    // 这些字段由后端自动填充，不需要校验
     private LocalDateTime createTime;
 
     @Size(min =2,max = 10,message = ValidationConstant.NAME)
-
     private String createUser;
 
-    @Past(message = ValidationConstant.TIME)
+    // 这些字段由后端自动填充，不需要校验
     private LocalDateTime updateTime;
 
     @Size(min =2,max = 10,message = ValidationConstant.NAME)
     private String updateUser;
 
-    @Past(message = ValidationConstant.TIME)
+    // 查询条件字段，不需要@Past校验（允许查询未来时间范围）
     private LocalDateTime startCreateTime;
-    @Past(message = ValidationConstant.TIME)
     private LocalDateTime endCreateTime;
 
-    @Past(message = ValidationConstant.TIME)
+    // 查询条件字段，不需要@Past校验（允许查询未来时间范围）
     private LocalDateTime startUpdateTime;
-    @Past(message = ValidationConstant.TIME)
     private LocalDateTime endUpdateTime;
 }

@@ -155,6 +155,10 @@ public class WarehouseAdminController {
         }
     }
 
+    @GetMapping("findAllRelation")
+    public Result findAllRelation() {
+        return Result.success(warehouseUserService.list());
+    }
     @GetMapping("findRelation")
     public Result findRelation(@Positive(message = ValidationConstant.ID) @RequestParam Integer userID,
                                @Positive(message = ValidationConstant.ID) @RequestParam Integer warehouseID) {
@@ -168,7 +172,13 @@ public class WarehouseAdminController {
         List<UserHaveWarehouseVO> userHaveWarehouseVOS =new ArrayList<>();
         for(User user:users){
             List<Integer> ids= user.getManagedWarehouseIds();
-            List<Warehouse> warehouses= warehouseService.findWarehousesById(ids);
+            //todo 修复：检查空列表，避免生成 id IN () 的无效SQL
+            List<Warehouse> warehouses;
+            if (ids != null && !ids.isEmpty()) {
+                warehouses = warehouseService.findWarehousesById(ids);
+            } else {
+                warehouses = new ArrayList<>(); // 返回空列表
+            }
             userHaveWarehouseVOS.add(new UserHaveWarehouseVO(user,warehouses));
         }
         return Result.success(userHaveWarehouseVOS);
@@ -181,7 +191,13 @@ public class WarehouseAdminController {
         List<WarehouseHaveUserVO> warehouseHaveUserVOS =new ArrayList<>();
         for(Warehouse warehouse:warehouses){
             List<Integer> ids = warehouseUserService.findUserIdByWarehouseId(warehouse.getId());
-            List<User> users =userService.findUsersByIds(ids);
+            //todo 修复：检查空列表，避免生成 id IN () 的无效SQL
+            List<User> users;
+            if (ids != null && !ids.isEmpty()) {
+                users = userService.findUsersByIds(ids);
+            } else {
+                users = new ArrayList<>(); // 返回空列表
+            }
             warehouseHaveUserVOS.add(new WarehouseHaveUserVO(warehouse,users));
         }
         return Result.success(warehouseHaveUserVOS);

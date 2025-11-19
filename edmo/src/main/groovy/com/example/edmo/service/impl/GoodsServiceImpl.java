@@ -90,10 +90,8 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
 
     @Override
     public Page<Goods> findGoodsByNameLike(PageDTO pageDTO,List<Integer> managedWarehouseIds) {
-        String name=(String) pageDTO.getParam().get("name");
         Wrapper<Goods> wrapper = Wrappers
                 .<Goods>query()
-                .like("name", name)
                 .eq("status", 1)
                 .in("warehouse_id", managedWarehouseIds)
                 .orderByDesc("id");
@@ -114,7 +112,8 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
                 .<Goods>query()
                 .eq("warehouse_id", warehouseId)
                 .eq("status", 1)
-                .in("warehouse_id", managedWarehouseIds);
+                .in("warehouse_id", managedWarehouseIds)
+                .orderByDesc("id");
 
         goodsInWarehouseVO.setGoods(goodsMapper.selectList(wrapper));
         return goodsInWarehouseVO;
@@ -125,11 +124,11 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
         QueryWrapper<Warehouse> wrapper2=Wrappers
                 .<Warehouse>query()
                 //列表用in
-                .in("warehouse_id",managedWarehouseIds)
+                .in("id",managedWarehouseIds)
                 .orderByDesc("id");
         List<Warehouse> warehouses = warehouseAdminMapper.selectList(wrapper2);
 
-        return fillGoods(warehouses);
+        return fillGoods(warehouses, null);
     }
 
     @Override
@@ -137,12 +136,11 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
         QueryWrapper<Warehouse> wrapper2=Wrappers
                 .<Warehouse>query()
                 //列表用in
-                .like("name", name)
-                .in("warehouse_id",managedWarehouseIds)
+                .in("id",managedWarehouseIds)
                 .orderByDesc("id");
         List<Warehouse> warehouses = warehouseAdminMapper.selectList(wrapper2);
 
-        return fillGoods(warehouses);
+        return fillGoods(warehouses, name);
     }
 
     @Override
@@ -165,17 +163,21 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
                 .le(goodsDTO.getEndUpdateTime() != null, "update_time", goodsDTO.getEndUpdateTime())
 
                 .eq("status", 1)
-                .in("warehouse_id",managedWarehouseIds);
+                .in("warehouse_id",managedWarehouseIds)
+                .orderByDesc("id");
         return goodsMapper.selectList(wrapper);
     }
 
-    private List<GoodsInWarehouseVO> fillGoods(List<Warehouse> warehouses){
+    private List<GoodsInWarehouseVO> fillGoods(List<Warehouse> warehouses, String goodsName){
         List<GoodsInWarehouseVO> goodsInWarehouseVOS=new ArrayList<>();
+        //把名字放入 fillGoods里搜索，判断存不存在
         for(Warehouse warehouse:warehouses){
             Wrapper<Goods> wrapper = Wrappers
                     .<Goods>query()
-                    .in("warehouse_id", warehouse.getId())
-                    .eq("status", 1);
+                    .eq("warehouse_id", warehouse.getId())
+                    .eq("status", 1)
+                    .like(goodsName != null && !goodsName.trim().isEmpty(),"name", goodsName)
+                    .orderByDesc("id");
 
             GoodsInWarehouseVO goodsInWarehouseVO=new GoodsInWarehouseVO();
             List<Goods> goodsList = goodsMapper.selectList(wrapper);

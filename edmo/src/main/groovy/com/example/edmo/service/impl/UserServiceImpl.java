@@ -62,12 +62,17 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public List<User> findUsersByNameLike(PageDTO pageDTO) {
-        String name=(String) pageDTO.getParam().get("name");
-
         QueryWrapper<User> wrapper = Wrappers
                 .<User>query()
-                .like("name",name)
                 .orderByDesc("id");
+        
+        //todo如果param不为null且包含name参数，则添加like条件，防止刚进入系统时无条件发生错误
+        if (pageDTO.getParam() != null && pageDTO.getParam().containsKey("name")) {
+            String name = (String) pageDTO.getParam().get("name");
+            if (name != null && !name.isEmpty()) {
+                wrapper.like("name", name);
+            }
+        }
 
         Page<User> page=new Page<>();
         page.setSize(pageDTO.getPageSize());

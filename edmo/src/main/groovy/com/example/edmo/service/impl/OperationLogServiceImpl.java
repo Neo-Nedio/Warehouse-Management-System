@@ -159,8 +159,9 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Ope
                 .eq(operationLogDTO.getFormerWarehouseId()!=null,"former_warehouse_id",operationLogDTO.getFormerWarehouseId())
                 .eq(operationLogDTO.getNewWarehouseId()!=null,"new_warehouse_id",operationLogDTO.getNewWarehouseId())
                 .like(operationLogDTO.getUpdateUser()!=null,"update_user",operationLogDTO.getUpdateUser())
-                .ge("update_time",operationLogDTO.getStartTime())
-                .le("update_time",operationLogDTO.getEndTime());
+                .ge(operationLogDTO.getStartTime()!=null,"update_time",operationLogDTO.getStartTime())
+                .le(operationLogDTO.getEndTime()!=null,"update_time",operationLogDTO.getEndTime())
+                .orderByDesc("id");
         return operationLogMapper.selectList(wrapper);
 
     }
