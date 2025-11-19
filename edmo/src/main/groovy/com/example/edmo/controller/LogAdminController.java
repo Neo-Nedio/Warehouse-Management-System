@@ -84,7 +84,7 @@ public class LogAdminController {
     }
 
     @GetMapping("/findByGoodsName")
-    public Result findByGoodsName(@RequestParam @Positive(message = ValidationConstant.ID) String name){
+    public Result findByGoodsName(@RequestParam String name){
         return Result.success(operationLogService.findByGoodsName(name));
     }
 

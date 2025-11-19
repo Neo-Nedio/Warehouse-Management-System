@@ -108,7 +108,9 @@ public class UserController {
         String password = loginRequest.getPassword();
         User user=userService.findUserByEmail(loginRequest.getEmail());
         user.setPassword(encoder.encode(password));
-        mod(new UserDTO(user));
+        if (!userService.updateById(user)) {
+            throw new UserException(CodeConstant.user, UserConstant.FALSE_MOD);
+        }
         return Result.success();
     }
 
