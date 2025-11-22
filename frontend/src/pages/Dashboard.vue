@@ -12,29 +12,29 @@
       <div class="menu-grid">
         <transition-group name="card" tag="div" class="menu-grid">
           <router-link to="/users" class="menu-card" key="users">
-            <h3>用户管理</h3>
-            <p>管理系统用户信息</p>
-          </router-link>
+          <h3>用户管理</h3>
+          <p>管理系统用户信息</p>
+        </router-link>
 
           <router-link to="/goods" class="menu-card" key="goods">
-            <h3>商品管理</h3>
-            <p>管理商品信息和库存</p>
-          </router-link>
+          <h3>商品管理</h3>
+          <p>管理商品信息和库存</p>
+        </router-link>
 
           <router-link to="/warehouse" class="menu-card" key="warehouse">
-            <h3>仓库管理</h3>
+          <h3>仓库管理</h3>
             <p>管理仓库信息</p>
           </router-link>
 
           <router-link to="/warehouse-user-relation" class="menu-card" key="warehouse-user-relation">
             <h3>用户与仓库关系</h3>
             <p>管理用户与仓库的关联关系</p>
-          </router-link>
+        </router-link>
 
           <router-link to="/logs" class="menu-card" key="logs">
-            <h3>操作日志</h3>
-            <p>查看系统操作记录</p>
-          </router-link>
+          <h3>操作日志</h3>
+          <p>查看系统操作记录</p>
+        </router-link>
         </transition-group>
       </div>
     </div>

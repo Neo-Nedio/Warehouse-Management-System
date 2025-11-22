@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 @Component
-public class goodsInterceptor implements HandlerInterceptor {
+public class GoodsInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request,
@@ -52,3 +52,4 @@ public class goodsInterceptor implements HandlerInterceptor {
     }
 
 }
+

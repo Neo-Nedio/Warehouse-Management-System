@@ -3,7 +3,7 @@ package com.example.edmo.config;
 import com.example.edmo.util.interceptor.FirstInterceptor;
 import com.example.edmo.util.interceptor.UserPermissionInterceptor;
 import com.example.edmo.util.interceptor.AdminInterceptor;
-import com.example.edmo.util.interceptor.goodsInterceptor;
+import com.example.edmo.util.interceptor.GoodsInterceptor;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -22,7 +22,7 @@ public class WebConfig implements WebMvcConfigurer {
     private AdminInterceptor adminInterceptor;
 
     @Resource
-    private goodsInterceptor goodsInterceptor;
+    private GoodsInterceptor goodsInterceptor;
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
@@ -44,7 +44,13 @@ public class WebConfig implements WebMvcConfigurer {
                         "/user/loginByPassword",
                         "/user/loginByCode",
                         "/user/updatePassword",
-                        "/user/refresh"
+                        "/user/refresh",
+                        // Swagger UI 和 OpenAPI 文档路径
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs/**",
+                        "/swagger-resources/**",
+                        "/webjars/**"
                 );
 
 

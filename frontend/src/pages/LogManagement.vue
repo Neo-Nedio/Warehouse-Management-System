@@ -60,7 +60,7 @@
       </div>
 
       <transition name="fade">
-        <div class="error-message" v-if="error">{{ error }}</div>
+      <div class="error-message" v-if="error">{{ error }}</div>
       </transition>
 
       <div v-if="loading" class="loading-container">
@@ -72,34 +72,34 @@
           <div v-if="logs.length === 0" class="empty-message">
             暂无日志数据
           </div>
-          <table v-else class="table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>操作类型</th>
-                <th>商品ID</th>
-                <th>商品名称</th>
-                <th>原仓库ID</th>
-                <th>新仓库ID</th>
-                <th>操作人</th>
-                <th>操作时间</th>
-              </tr>
-            </thead>
-            <tbody>
+      <table v-else class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>操作类型</th>
+            <th>商品ID</th>
+            <th>商品名称</th>
+            <th>原仓库ID</th>
+            <th>新仓库ID</th>
+            <th>操作人</th>
+            <th>操作时间</th>
+          </tr>
+        </thead>
+        <tbody>
               <transition-group name="list">
                 <tr v-for="log in logs" :key="log.id" class="table-row">
-                  <td>{{ log.id }}</td>
-                  <td>{{ getOperateTypeName(log.operateType) }}</td>
-                  <td>{{ log.goodsId }}</td>
-                  <td>{{ log.goodsName }}</td>
-                  <td>{{ log.formerWarehouseId || '-' }}</td>
-                  <td>{{ log.newWarehouseId || '-' }}</td>
-                  <td>{{ log.updateUser }}</td>
-                  <td>{{ new Date(log.updateTime).toLocaleString() }}</td>
-                </tr>
+            <td>{{ log.id }}</td>
+            <td>{{ getOperateTypeName(log.operateType) }}</td>
+            <td>{{ log.goodsId }}</td>
+            <td>{{ log.goodsName }}</td>
+            <td>{{ log.formerWarehouseId || '-' }}</td>
+            <td>{{ log.newWarehouseId || '-' }}</td>
+            <td>{{ log.updateUser }}</td>
+            <td>{{ new Date(log.updateTime).toLocaleString() }}</td>
+          </tr>
               </transition-group>
-            </tbody>
-          </table>
+        </tbody>
+      </table>
         </div>
       </transition>
       
@@ -317,9 +317,9 @@ const handleFilterByType = async () => {
       }
     } else {
       // 使用全量查询
-      const response = await logApi.findAllByType(filterType.value)
-      if (response.data) {
-        logs.value = response.data
+    const response = await logApi.findAllByType(filterType.value)
+    if (response.data) {
+      logs.value = response.data
         pageInfo.value = {
           current: 1,
           pages: 1,

@@ -162,7 +162,7 @@ class ApiRequest {
                          errorMsg.includes('过期')
       if (isAuthError) {
         console.log('token验证失败，清除认证信息')
-        this.clearAuthAndRedirect()
+      this.clearAuthAndRedirect()
       } else {
         console.log('刷新token失败，但可能是临时错误，不清除认证信息')
       }
@@ -176,7 +176,7 @@ class ApiRequest {
     authStore.logout()
     // 延迟跳转，避免在请求处理过程中立即跳转
     setTimeout(() => {
-      window.location.href = '/login'
+    window.location.href = '/login'
     }, 100)
   }
 

@@ -3,7 +3,6 @@ package com.example.edmo.controller;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.example.edmo.exception.JwtException;
 import com.example.edmo.service.Interface.WarehouseUserService;
 import com.example.edmo.util.Constant.CodeConstant;
 import com.example.edmo.util.Constant.JwtConstant;
@@ -16,13 +15,19 @@ import com.example.edmo.pojo.DTO.UserDTO;
 import com.example.edmo.pojo.entity.User;
 import com.example.edmo.exception.UserException;
 import com.example.edmo.service.Interface.UserService;
-import com.example.edmo.util.Jwt.UserContext;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+@Tag(name = "用户管理", description = "用户相关接口，包括登录、注册、用户信息管理等")
 @Validated
 @RestController
 @RequestMapping("/user")
@@ -48,9 +54,15 @@ public class UserController {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
+    @Operation(summary = "发送验证码", description = "向指定邮箱发送登录验证码，验证码有效期为2分钟，存储在Redis中")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "验证码发送成功"),
+            @ApiResponse(responseCode = "400", description = "用户不存在")
+    })
     @GetMapping("/code")
-    public Result createCode(@Email @RequestParam  String email) {
-        int code=userService.CreatCode(email);
+    public Result createCode(@Parameter(description = "用户邮箱（必须是已注册的邮箱）", required = true, example = "user@example.com")
+                             @Email @RequestParam String email) {
+        int code=userService.CreateCode(email);
         if(code==0) throw new UserException(CodeConstant.user,UserConstant.NULL_USER);
 
         //把验证码保存在redis
@@ -59,6 +71,11 @@ public class UserController {
         return Result.success();
     }
 
+    @Operation(summary = "密码登录", description = "使用邮箱和密码进行登录。密码长度2-10字符。登录成功后返回用户信息（包含管理的仓库ID列表）和双Token（accessToken有效期30分钟，refreshToken有效期7天）")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "登录成功，返回用户信息和token"),
+            @ApiResponse(responseCode = "400", description = "邮箱或密码错误")
+    })
     @PostMapping("/loginByPassword")
     public Result loginByPassword(@Valid @RequestBody LoginRequest loginRequest){
         // 根据邮箱查找用户
@@ -70,6 +87,11 @@ public class UserController {
         return sendToken(user);
     }
 
+    @Operation(summary = "验证码登录", description = "使用邮箱和验证码进行登录。验证码有效期为2分钟，需要先调用发送验证码接口获取验证码。登录成功后返回用户信息（包含管理的仓库ID列表）和双Token（accessToken有效期30分钟，refreshToken有效期7天）")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "登录成功，返回用户信息和token"),
+            @ApiResponse(responseCode = "400", description = "验证码错误或已过期（超过2分钟）")
+    })
     @PostMapping("/loginByCode")
     public Result loginByCode(@Valid @RequestBody LoginRequest loginRequest) {
 
@@ -87,10 +109,19 @@ public class UserController {
         if(code!=redisCode) throw new UserException(CodeConstant.user,UserConstant.FALSE_CODE);
 
         User user=userService.findUserByEmail(loginRequest.getEmail());//获取验证码时已经检验用户是否存在
+
+        //  验证成功后立即删除验证码（防止重复使用）
+        stringRedisTemplate.delete(RedisConstant.LOGIN_CODE_KEY + email);
         return sendToken(user);
     }
 
+    @Operation(summary = "更新密码", description = "通过验证码验证后更新用户密码。验证码有效期为2分钟，需要先调用发送验证码接口获取验证码。新密码长度2-10字符，会自动使用BCrypt加密存储")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "密码更新成功"),
+            @ApiResponse(responseCode = "400", description = "验证码错误或已过期（超过2分钟）或用户不存在")
+    })
     @PostMapping("/updatePassword")
+    @Transactional(rollbackFor = Exception.class)
     public Result updatePassword(@Valid @RequestBody LoginRequest loginRequest) {
         String email = loginRequest.getEmail();
         int code = loginRequest.getCode();
@@ -110,14 +141,21 @@ public class UserController {
         if (!userService.updateById(user)) {
             throw new UserException(CodeConstant.user, UserConstant.FALSE_MOD);
         }
+        //  验证成功后立即删除验证码（防止重复使用）
+        stringRedisTemplate.delete(RedisConstant.LOGIN_CODE_KEY + email);
+
         return Result.success();
     }
 
+    @Operation(summary = "刷新Token", description = "使用RefreshToken刷新AccessToken。RefreshToken有效期为7天，刷新成功后返回新的双Token（accessToken有效期30分钟，refreshToken有效期7天）和用户信息")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Token刷新成功，返回新的token和用户信息"),
+            @ApiResponse(responseCode = "400", description = "Token无效或已过期（超过7天）或用户不存在")
+    })
     @PostMapping("/refresh")
-    public Result refresh(@RequestParam String RefreshToken) {
+    public Result refresh(@Parameter(description = "刷新Token（RefreshToken）", required = true)
+                          @RequestParam @NotBlank(message = "RefreshToken不能为空") String RefreshToken) {
         try {
-            if (RefreshToken == null ) throw new JwtException(CodeConstant.token,JwtConstant.NULL_TOKEN);
-
             // 验证Refresh Token（只验证JWT本身，不验证Redis）
             Algorithm algorithm = Algorithm.HMAC256(JwtConstant.SECRET_KEY);
             DecodedJWT jwt = JWT.require(algorithm).build().verify(RefreshToken);
@@ -133,6 +171,8 @@ public class UserController {
         }
     }
 
+    @Operation(summary = "退出登录", description = "用户退出登录")
+    @ApiResponse(responseCode = "200", description = "退出登录成功")
     @GetMapping("logOut")
     public Result logout() {
         // 不再需要删除Redis中的refreshToken，因为不再存储
@@ -154,34 +194,40 @@ public class UserController {
                 "refreshToken", refreshToken
         ));
 
-        // 不再将refreshToken存储到Redis，只使用JWT本身验证
-
         return Result.success(result);
     }
 
 
 
 
-    //普通权限
+    @Operation(summary = "根据名称模糊查询用户", description = "根据用户名模糊查询用户列表，支持普通用户权限。用户名长度2-10字符")
     @GetMapping("/findByNameLike")
-    public Result nameLike(@RequestParam String name) {
+    public Result nameLike(@Parameter(description = "用户名关键字（支持模糊匹配）", example = "张三")
+                           @RequestParam String name) {
         return Result.success(userService.findUsersByNameLike(name));
     }
 
+    @Operation(summary = "分页查询用户", description = "根据条件分页查询用户列表，支持普通用户权限。PageDTO包含：pageSize（默认20）、pageNum（默认1）、param（HashMap，可包含name等查询条件）")
     @PostMapping("/listPage")
-    public Result listPage(@RequestBody  PageDTO pageDTO) {
+    public Result listPage(@RequestBody PageDTO pageDTO) {
         List<User> list=userService.findUsersByNameLike(pageDTO);
         return Result.success(list);
     }
 
+    @Operation(summary = "根据ID查询用户", description = "根据用户ID查询用户详细信息，包括用户基本信息（id、name、email、phone、sex、age、roleId）和管理的仓库ID列表（managedWarehouseIds），支持普通用户权限")
     @GetMapping("/findById")
-    public Result findById(@Positive( message = "ID必须大于0") @RequestParam Integer id) {
+    public Result findById(@Parameter(description = "用户ID（必须大于0）", required = true, example = "1")
+                           @Positive(message = "ID必须大于0") @RequestParam Integer id) {
        User user =userService.getById(id);
        user.setManagedWarehouseIds(warehouseUserService.findWarehouseIdByUserId(user.getId()));
        return Result.success(user);
     }
 
-    //管理员权限
+    @Operation(summary = "创建用户", description = "管理员创建新用户（需要管理员权限）。UserDTO参数：name（2-10字符）、email（邮箱格式）、phone（手机号格式）、password（2-10字符，会自动BCrypt加密）、sex（0-1，0女1男）、age（16-120）、roleId（1-3）。id字段不需要提供")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "用户创建成功"),
+            @ApiResponse(responseCode = "400", description = "创建失败或用户已存在或参数验证失败")
+    })
     @PostMapping("/save")
     public Result save(@Valid @RequestBody UserDTO userDTO) {
         try {
@@ -198,23 +244,54 @@ public class UserController {
         }
     }
 
+    @Operation(summary = "修改用户", description = "管理员修改用户信息（需要管理员权限）。UserDTO参数：id（必填，必须大于0）、name（2-10字符）、email（邮箱格式）、phone（手机号格式）、password（2-10字符，如果提供会自动BCrypt加密）、sex（0-1）、age（16-120）、roleId（1-3）。注意：如果password为空，不会更新密码字段")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "用户修改成功"),
+            @ApiResponse(responseCode = "400", description = "修改失败或用户不存在或参数验证失败")
+    })
     @PutMapping("/mod")
     public Result mod(@Valid @RequestBody UserDTO userDTO) {
         try {
-            User user = new User(userDTO, userDTO.getId());
-            if (userService.updateById(user)) {
-                return Result.success();
+            // 如果提供了密码，则加密；如果为空或null，则不更新密码字段
+            String password = userDTO.getPassword();
+            if (password != null && !password.trim().isEmpty()) {
+                // 有密码，加密后更新
+                userDTO.setPassword(encoder.encode(password));
+                User user = new User(userDTO, userDTO.getId());
+                if (userService.updateById(user)) {
+                    return Result.success();
+                } else {
+                    throw new UserException(CodeConstant.user,UserConstant.FALSE_MOD);
+                }
             } else {
-                throw new UserException(CodeConstant.user,UserConstant.FALSE_MOD);
+                // 密码为空，先查询原用户，然后只更新其他字段（不更新密码）
+                User existingUser = userService.getById(userDTO.getId());
+                if (existingUser == null) {
+                    throw new UserException(CodeConstant.user,UserConstant.NULL_USER);
+                }
+                // 创建新User对象，但保留原密码
+                User user = new User(userDTO, userDTO.getId());
+                user.setPassword(existingUser.getPassword()); // 保留原密码
+                if (userService.updateById(user)) {
+                    return Result.success();
+                } else {
+                    throw new UserException(CodeConstant.user,UserConstant.FALSE_MOD);
+                }
             }
         } catch (Exception e) {
-            throw new UserException(CodeConstant.user,UserConstant.FALSE_MOD);
+            throw new UserException(CodeConstant.user,e.getMessage());
         }
     }
 
 
+    @Operation(summary = "删除用户", description = "管理员删除用户（需要管理员权限）")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "用户删除成功"),
+            @ApiResponse(responseCode = "400", description = "删除失败或用户不存在")
+    })
     @DeleteMapping("/delete")
-    public Result delete(@Positive( message = "ID必须大于0") @RequestParam Integer id) {
+    public Result delete(@Parameter(description = "用户ID", required = true, example = "1")
+                         @Positive(message = "ID必须大于0") @RequestParam Integer id) {
         try {
             if (userService.removeById(id))  {
                 return Result.success();

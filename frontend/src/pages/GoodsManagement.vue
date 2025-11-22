@@ -32,7 +32,7 @@
       </div>
 
       <transition name="fade">
-        <div class="error-message" v-if="error">{{ error }}</div>
+      <div class="error-message" v-if="error">{{ error }}</div>
       </transition>
 
       <div v-if="loading" class="loading-container">
@@ -57,23 +57,23 @@
         <tbody>
           <transition-group name="list">
             <tr v-for="item in goods" :key="item.id" class="table-row">
-              <td>{{ item.id }}</td>
-              <td>{{ item.name }}</td>
-              <td>{{ item.price }}</td>
-              <td>{{ item.number }}</td>
-              <td>{{ item.warehouseId }}</td>
+            <td>{{ item.id }}</td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.price }}</td>
+            <td>{{ item.number }}</td>
+            <td>{{ item.warehouseId }}</td>
               <td>{{ getWarehouseName(item.warehouseId) }}</td>
-              <td>{{ item.status === 0 ? '已删除' : '正常' }}</td>
-              <td>
-                <button class="btn btn-primary" @click="handleEdit(item)">编辑</button>
+            <td>{{ item.status === 0 ? '已删除' : '正常' }}</td>
+            <td>
+              <button class="btn btn-primary" @click="handleEdit(item)">编辑</button>
                 <button class="btn btn-warning" @click="handleModifyWarehouse(item)" style="margin-left: 10px" :disabled="item.status === 0">
                   修改仓库
                 </button>
-                <button class="btn btn-danger" @click="handleDelete(item)" style="margin-left: 10px" :disabled="item.status === 0">
-                  删除
-                </button>
-              </td>
-            </tr>
+              <button class="btn btn-danger" @click="handleDelete(item)" style="margin-left: 10px" :disabled="item.status === 0">
+                删除
+              </button>
+            </td>
+          </tr>
           </transition-group>
         </tbody>
       </table>
@@ -125,7 +125,7 @@
     </div>
 
     <transition name="modal">
-      <div v-if="showModal" class="modal-overlay" @click="showModal = false">
+    <div v-if="showModal" class="modal-overlay" @click="showModal = false">
       <div class="modal-content" @click.stop>
         <h3>{{ editingGoods ? '编辑商品' : '新增商品' }}</h3>
         <div class="form-group">
@@ -154,7 +154,7 @@
           <button class="btn" @click="showModal = false; editingGoods = null; resetForm()">取消</button>
         </div>
       </div>
-      </div>
+    </div>
     </transition>
 
     <!-- 高级搜索模态框 -->
@@ -478,17 +478,17 @@ const loadGoods = async (usePage = false) => {
     } else {
       // 使用原来的全量查询
       usePagination.value = false
-      const response = await goodsApi.findGoodsAllByManagedWarehouseIds()
-      if (response.data) {
+    const response = await goodsApi.findGoodsAllByManagedWarehouseIds()
+    if (response.data) {
         warehousesData.value = response.data
-        // 将 GoodsInWarehouseVO[] 转换为 Goods[]
-        // 每个仓库下的商品列表合并成一个数组
-        const allGoods: Goods[] = []
-        response.data.forEach((warehouse: GoodsInWarehouseVO) => {
-          if (warehouse.goods && warehouse.goods.length > 0) {
-            allGoods.push(...warehouse.goods)
-          }
-        })
+      // 将 GoodsInWarehouseVO[] 转换为 Goods[]
+      // 每个仓库下的商品列表合并成一个数组
+      const allGoods: Goods[] = []
+      response.data.forEach((warehouse: GoodsInWarehouseVO) => {
+        if (warehouse.goods && warehouse.goods.length > 0) {
+          allGoods.push(...warehouse.goods)
+        }
+      })
         // 按ID递减排序
         goods.value = allGoods.sort((a, b) => b.id - a.id)
         // 提取可用的仓库列表

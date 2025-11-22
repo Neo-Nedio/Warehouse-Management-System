@@ -26,7 +26,7 @@
       </div>
 
       <transition name="fade">
-        <div class="error-message" v-if="error">{{ error }}</div>
+      <div class="error-message" v-if="error">{{ error }}</div>
       </transition>
 
       <div v-if="loading" class="loading-container">
@@ -46,14 +46,14 @@
         <tbody>
           <transition-group name="list">
             <tr v-for="warehouse in warehouses" :key="warehouse.id" class="table-row">
-              <td>{{ warehouse.id }}</td>
-              <td>{{ warehouse.name }}</td>
-              <td>{{ warehouse.description }}</td>
-              <td>
-                <button class="btn btn-primary" @click="handleEdit(warehouse)">编辑</button>
-                <button class="btn btn-danger" @click="handleDelete(warehouse.id)" style="margin-left: 10px">删除</button>
-              </td>
-            </tr>
+            <td>{{ warehouse.id }}</td>
+            <td>{{ warehouse.name }}</td>
+            <td>{{ warehouse.description }}</td>
+            <td>
+              <button class="btn btn-primary" @click="handleEdit(warehouse)">编辑</button>
+              <button class="btn btn-danger" @click="handleDelete(warehouse.id)" style="margin-left: 10px">删除</button>
+            </td>
+          </tr>
           </transition-group>
         </tbody>
       </table>
@@ -107,7 +107,7 @@
     </div>
 
     <transition name="modal">
-      <div v-if="showModal" class="modal-overlay" @click="showModal = false">
+    <div v-if="showModal" class="modal-overlay" @click="showModal = false">
       <div class="modal-content" @click.stop>
         <h3>{{ editingWarehouse ? '编辑仓库' : '新增仓库' }}</h3>
         <div class="form-group">
@@ -123,7 +123,7 @@
           <button class="btn" @click="showModal = false; editingWarehouse = null; resetForm()">取消</button>
         </div>
       </div>
-      </div>
+    </div>
     </transition>
   </div>
 </template>
@@ -198,7 +198,7 @@ const loadWarehouses = async () => {
         pageNum: 1,
         param: searchName.value && searchType.value === 'name' ? { name: searchName.value } : {},
       })
-      if (response.data) {
+    if (response.data) {
         warehouses.value = response.data as Warehouse[]
         pageInfo.value = {
           current: 1,
@@ -254,7 +254,7 @@ const handleSearch = async () => {
         pageSize: pageSize.value,
         param: { name: searchName.value },
       })
-      if (response.data) {
+    if (response.data) {
         warehouses.value = response.data as Warehouse[]
         // 后端返回的是数组，无法获取真正的总数
         // 如果返回的数据量等于pageSize，说明可能还有下一页

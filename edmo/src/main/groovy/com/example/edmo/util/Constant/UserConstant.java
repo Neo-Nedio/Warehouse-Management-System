@@ -9,4 +9,5 @@ public class UserConstant {
     public static String FALSE_SAVE="保存失败";
     public static String FALSE_MOD="修改失败";
     public static String FALSE_DELETE="删除失败";
+    public static String FALSE_GET="验证码发送过于频繁，请稍后再试";
 }

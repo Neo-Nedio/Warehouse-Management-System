@@ -4,19 +4,23 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.edmo.exception.UserException;
 import com.example.edmo.pojo.DTO.PageDTO;
-import com.example.edmo.pojo.DTO.LoginRequest;
 import com.example.edmo.pojo.entity.User;
 import com.example.edmo.mapper.UserMapper;
 import com.example.edmo.service.Interface.UserService;
 import com.example.edmo.service.Interface.WarehouseUserService;
+import com.example.edmo.util.Constant.CodeConstant;
+import com.example.edmo.util.Constant.UserConstant;
 import jakarta.annotation.Resource;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,16 +32,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private WarehouseUserService  warehouseUserService;
 
     @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
     JavaMailSender sender;
 
 
     @Override
-    public int CreatCode(String email) {
+    public int CreateCode(String email) {
         if(findUserByEmail( email)==null) return 0;
 
+        // 频率限制检查
+        String limitKey = "user:code:limit:" + email;
 
-        Random random = new Random();
-        int code = random.nextInt(900000)+100000;
+        // 检查1分钟内是否已发送
+        String lastSendTime = stringRedisTemplate.opsForValue().get(limitKey);
+        if (lastSendTime != null) {
+            throw new UserException(CodeConstant.user, UserConstant.FALSE_GET);
+        }
+
+
+
+        SecureRandom secureRandom = new SecureRandom();
+        int code = secureRandom.nextInt(900000) + 100000;
         SimpleMailMessage message = new SimpleMailMessage();
         //设置邮件标题
         message.setSubject("验证码");
@@ -48,6 +65,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         //邮件发送者，这里要与配置文件中的保持一致
         message.setFrom("18276593770@163.com");
         sender.send(message);
+
+        stringRedisTemplate.opsForValue().set(limitKey, String.valueOf(System.currentTimeMillis()),
+                1, TimeUnit.MINUTES);
+
         return code;
     }
 

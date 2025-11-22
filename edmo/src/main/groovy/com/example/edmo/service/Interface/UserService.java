@@ -10,7 +10,7 @@ import java.util.List;
 
 @Service
 public interface UserService extends IService<User> {
-    int CreatCode(String email);
+    int CreateCode(String email);
 
     List<User> findUsersByNameLike(String name);
 

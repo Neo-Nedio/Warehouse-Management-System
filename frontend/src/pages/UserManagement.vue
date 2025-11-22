@@ -25,7 +25,7 @@
       </div>
 
       <transition name="fade">
-        <div class="error-message" v-if="error">{{ error }}</div>
+      <div class="error-message" v-if="error">{{ error }}</div>
       </transition>
 
       <div v-if="loading" class="loading-container">
@@ -51,12 +51,12 @@
         <tbody>
           <transition-group name="list">
             <tr v-for="user in users" :key="user.id" class="table-row">
-              <td>{{ user.id }}</td>
-              <td>{{ user.name }}</td>
-              <td>{{ user.email }}</td>
-              <td>{{ user.phone }}</td>
-              <td>{{ user.sex === 0 ? '女' : '男' }}</td>
-              <td>{{ user.age }}</td>
+            <td>{{ user.id }}</td>
+            <td>{{ user.name }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.phone }}</td>
+            <td>{{ user.sex === 0 ? '女' : '男' }}</td>
+            <td>{{ user.age }}</td>
               <td>{{ getRoleName(user.roleId) }}</td>
               <td>
                 <span v-if="user.managedWarehouseIds && user.managedWarehouseIds.length > 0">
@@ -64,11 +64,11 @@
                 </span>
                 <span v-else style="color: #999;">无</span>
               </td>
-              <td>
-                <button class="btn btn-primary" @click="handleEdit(user)">编辑</button>
-                <button class="btn btn-danger" @click="handleDelete(user.id)" style="margin-left: 10px">删除</button>
-              </td>
-            </tr>
+            <td>
+              <button class="btn btn-primary" @click="handleEdit(user)">编辑</button>
+              <button class="btn btn-danger" @click="handleDelete(user.id)" style="margin-left: 10px">删除</button>
+            </td>
+          </tr>
           </transition-group>
         </tbody>
       </table>
@@ -120,7 +120,7 @@
     </div>
 
     <transition name="modal">
-      <div v-if="showModal" class="modal-overlay" @click="showModal = false">
+    <div v-if="showModal" class="modal-overlay" @click="showModal = false">
       <div class="modal-content" @click.stop>
         <h3>{{ editingUser ? '编辑用户' : '新增用户' }}</h3>
         <div class="form-group">
@@ -138,6 +138,10 @@
         <div class="form-group" v-if="!editingUser">
           <label>密码</label>
           <input type="password" v-model="formData.password" required />
+        </div>
+        <div class="form-group" v-if="editingUser">
+          <label>密码（留空则不修改）</label>
+          <input type="password" v-model="formData.password" placeholder="留空则不修改密码" />
         </div>
         <div class="form-group">
           <label>性别</label>
@@ -163,7 +167,7 @@
           <button class="btn" @click="showModal = false; editingUser = null; resetForm()">取消</button>
         </div>
       </div>
-      </div>
+    </div>
     </transition>
   </div>
 </template>
@@ -243,9 +247,9 @@ const loadUsers = async () => {
       }
     } else {
       // 使用全量查询
-      const response = await userApi.listPage({ pageSize: 100, pageNum: 1 })
-      if (response.data) {
-        users.value = response.data
+    const response = await userApi.listPage({ pageSize: 100, pageNum: 1 })
+    if (response.data) {
+      users.value = response.data
         pageInfo.value = {
           current: 1,
           pages: 1,
@@ -298,8 +302,8 @@ const handleSearch = async () => {
         pageSize: pageSize.value,
         param: { name: searchName.value },
       })
-      if (response.data) {
-        users.value = response.data
+    if (response.data) {
+      users.value = response.data
         // 估算分页信息
         if (response.data.length < pageSize.value) {
           pageInfo.value = {
