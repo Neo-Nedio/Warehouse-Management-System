@@ -10,7 +10,9 @@ import com.example.edmo.pojo.entity.User;
 import com.example.edmo.mapper.UserMapper;
 import com.example.edmo.service.Interface.UserService;
 import com.example.edmo.service.Interface.WarehouseUserService;
+import cn.hutool.json.JSONUtil;
 import com.example.edmo.util.Constant.CodeConstant;
+import com.example.edmo.util.Constant.RedisConstant;
 import com.example.edmo.util.Constant.UserConstant;
 import jakarta.annotation.Resource;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -18,6 +20,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import java.io.Serializable;
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +40,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Resource
     JavaMailSender sender;
 
+    /**
+     * 重写 save 方法，清除列表缓存
+     */
+    @Override
+    public boolean save(User entity) {
+        boolean result = super.save(entity);
+        if (result) {
+            // 清除列表缓存（新增用户后，列表查询结果会变化）
+            var keys = stringRedisTemplate.keys(RedisConstant.USER_LIST_KEY + "*");
+            if (!keys.isEmpty()) {
+                stringRedisTemplate.delete(keys);
+            }
+        }
+        return result;
+    }
 
     @Override
     public int CreateCode(String email) {
@@ -74,11 +92,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     public List<User> findUsersByNameLike(String name) {
+        // 尝试从缓存获取
+        String cacheKey = RedisConstant.USER_LIST_KEY + "name:" + name;
+        String cacheValue = stringRedisTemplate.opsForValue().get(cacheKey);
+        if (cacheValue != null) {
+            // 缓存命中，更新过期时间
+            stringRedisTemplate.expire(cacheKey, RedisConstant.USER_LIST_TTL, TimeUnit.MINUTES);
+            return fillManagedWarehouseIds(JSONUtil.toList(cacheValue, User.class));
+        }
+
+        // 缓存未命中，查询数据库
         QueryWrapper<User> wrapper = Wrappers
                 .<User>query()
                 .like("name",name)
                 .orderByDesc("id");
-        return fillManagedWarehouseIds(userMapper.selectList(wrapper));
+        List<User> users = fillManagedWarehouseIds(userMapper.selectList(wrapper));
+        
+        // 存入缓存
+        stringRedisTemplate.opsForValue().set(cacheKey, JSONUtil.toJsonStr(users), 
+                RedisConstant.USER_LIST_TTL, TimeUnit.MINUTES);
+        return users;
     }
 
     @Override
@@ -107,19 +140,115 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     //用来邮箱验证
     @Override
     public User findUserByEmail(String email) {
+        // 尝试从缓存获取
+        String cacheKey = RedisConstant.USER_KEY + "email:" + email;
+        String cacheValue = stringRedisTemplate.opsForValue().get(cacheKey);
+        if (cacheValue != null) {
+            // 缓存命中，更新过期时间
+            stringRedisTemplate.expire(cacheKey, RedisConstant.USER_TTL, TimeUnit.MINUTES);
+            return JSONUtil.toBean(cacheValue, User.class);
+        }
+
+        // 缓存未命中，查询数据库
         QueryWrapper<User> wrapper=Wrappers
                 .<User>query()
                 .eq("email",email);
-        return userMapper.selectOne(wrapper);
+        User user = userMapper.selectOne(wrapper);
+        
+        // 存入缓存
+        if (user != null) {
+            stringRedisTemplate.opsForValue().set(cacheKey, JSONUtil.toJsonStr(user), 
+                    RedisConstant.USER_TTL, TimeUnit.MINUTES);
+        }
+        return user;
     }
 
     @Override
     public List<User> findUsersByIds(List<Integer> ids) {
+        // 构建缓存 key
+        String cacheKey = RedisConstant.USER_LIST_KEY + "ids:" + ids.toString();
+        
+        // 尝试从缓存获取
+        String cacheValue = stringRedisTemplate.opsForValue().get(cacheKey);
+        if (cacheValue != null) {
+            // 缓存命中，更新过期时间
+            stringRedisTemplate.expire(cacheKey, RedisConstant.USER_LIST_TTL, TimeUnit.MINUTES);
+            return fillManagedWarehouseIds(JSONUtil.toList(cacheValue, User.class));
+        }
+
+        // 缓存未命中，查询数据库
         QueryWrapper<User> wrapper = Wrappers
                 .<User>query()
                 .in("id", ids)
                 .orderByDesc("id");
-        return fillManagedWarehouseIds(userMapper.selectList(wrapper));
+        List<User> users = fillManagedWarehouseIds(userMapper.selectList(wrapper));
+        
+        // 存入缓存
+        stringRedisTemplate.opsForValue().set(cacheKey, JSONUtil.toJsonStr(users), 
+                RedisConstant.USER_LIST_TTL, TimeUnit.MINUTES);
+        return users;
+    }
+
+    @Override
+    public User getById(Serializable id) {
+        // 尝试从缓存获取
+        String cacheKey = RedisConstant.USER_KEY + "id:" + id;
+        String cacheValue = stringRedisTemplate.opsForValue().get(cacheKey);
+        if (cacheValue != null) {
+            // 缓存命中，更新过期时间
+            stringRedisTemplate.expire(cacheKey, RedisConstant.USER_TTL, TimeUnit.MINUTES);
+            return JSONUtil.toBean(cacheValue, User.class);
+        }
+
+        // 缓存未命中，查询数据库
+        User user = super.getById(id);
+        
+        // 存入缓存
+        if (user != null) {
+            stringRedisTemplate.opsForValue().set(cacheKey, JSONUtil.toJsonStr(user), 
+                    RedisConstant.USER_TTL, TimeUnit.MINUTES);
+        }
+        return user;
+    }
+
+
+    @Override
+    public boolean updateById(User entity) {
+        boolean result = super.updateById(entity);
+        if (result && entity != null) {
+            // 清除相关缓存
+            if (entity.getId() != null) {
+                stringRedisTemplate.delete(RedisConstant.USER_KEY + "id:" + entity.getId());
+            }
+            if (entity.getEmail() != null) {
+                stringRedisTemplate.delete(RedisConstant.USER_KEY + "email:" + entity.getEmail());
+            }
+            // 清除列表缓存（使用 keys 匹配）
+            var keys = stringRedisTemplate.keys(RedisConstant.USER_LIST_KEY + "*");
+            if (!keys.isEmpty()) {
+                stringRedisTemplate.delete(keys);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public boolean removeById(Serializable id) {
+        // 先获取用户信息用于清除缓存
+        User user = super.getById(id);
+        boolean result = super.removeById(id);
+        if (result && user != null) {
+            stringRedisTemplate.delete(RedisConstant.USER_KEY + "id:" + id);
+            if (user.getEmail() != null) {
+                stringRedisTemplate.delete(RedisConstant.USER_KEY + "email:" + user.getEmail());
+            }
+            // 清除列表缓存（使用 keys 匹配）
+            var keys = stringRedisTemplate.keys(RedisConstant.USER_LIST_KEY + "*");
+            if (!keys.isEmpty()) {
+                stringRedisTemplate.delete(keys);
+            }
+        }
+        return result;
     }
 
     //todo

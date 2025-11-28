@@ -284,14 +284,24 @@ const handleSearch = async () => {
         error.value = '请输入有效的用户ID'
         return
       }
-      const response = await userApi.findById(id)
-      if (response.data) {
-        users.value = [response.data]
-        pageInfo.value = { current: 1, pages: 1, total: 1, size: 1 }
-      } else {
+      try {
+        const response = await userApi.findById(id)
+        if (response.data) {
+          users.value = [response.data]
+          pageInfo.value = { current: 1, pages: 1, total: 1, size: 1 }
+        } else {
+          // 未找到用户，只显示无数据，不显示错误
+          users.value = []
+          error.value = '' // 清空错误信息
+          pageInfo.value = { current: 1, pages: 1, total: 0, size: 0 }
+        }
+      } catch (err: any) {
+        // 请求失败（网络错误等），只显示无数据，不显示错误信息
         users.value = []
-        error.value = '未找到该用户'
+        error.value = '' // 清空错误信息
         pageInfo.value = { current: 1, pages: 1, total: 0, size: 0 }
+        console.error('查找用户失败:', err)
+        return // 提前返回，避免被外层 catch 捕获
       }
     } else {
       // 按名称搜索，使用分页

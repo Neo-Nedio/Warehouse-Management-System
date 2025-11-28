@@ -619,15 +619,25 @@ const handleSearch = async () => {
         error.value = '请输入有效的商品ID'
         return
       }
-      const response = await goodsApi.findGoodsByID(id)
-      if (response.data) {
-        // 按ID递减排序（单条数据也保持一致性）
-        goods.value = [response.data].sort((a, b) => b.id - a.id)
-        pageInfo.value = { current: 1, pages: 1, total: 1, size: 1 }
-      } else {
+      try {
+        const response = await goodsApi.findGoodsByID(id)
+        if (response.data) {
+          // 按ID递减排序（单条数据也保持一致性）
+          goods.value = [response.data].sort((a, b) => b.id - a.id)
+          pageInfo.value = { current: 1, pages: 1, total: 1, size: 1 }
+        } else {
+          // 未找到商品，只显示无数据，不显示错误
+          goods.value = []
+          error.value = '' // 清空错误信息
+          pageInfo.value = { current: 1, pages: 1, total: 0, size: 0 }
+        }
+      } catch (err: any) {
+        // 请求失败（网络错误等），只显示无数据，不显示错误信息
         goods.value = []
-        error.value = '未找到该商品'
+        error.value = '' // 清空错误信息
         pageInfo.value = { current: 1, pages: 1, total: 0, size: 0 }
+        console.error('查找商品失败:', err)
+        return // 提前返回，避免被外层 catch 捕获
       }
     } else if (searchType.value === 'warehouseId') {
       // 按仓库ID搜索

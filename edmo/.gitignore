@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# 忽略环境特定的配置文件
+application.yml
+

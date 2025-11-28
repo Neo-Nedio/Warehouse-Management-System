@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+//todo前端登录页面返回结果与后端不一致，前端申请后端在用户无权限时前端无显示，学习在除日志服务层外其他服务层的redis
 @Tag(name = "用户管理", description = "用户相关接口，包括登录、注册、用户信息管理等")
 @Validated
 @RestController
@@ -218,7 +219,10 @@ public class UserController {
     @GetMapping("/findById")
     public Result findById(@Parameter(description = "用户ID（必须大于0）", required = true, example = "1")
                            @Positive(message = "ID必须大于0") @RequestParam Integer id) {
-       User user =userService.getById(id);
+       User user = userService.getById(id);
+       if (user == null) {
+           return Result.success(null);
+       }
        user.setManagedWarehouseIds(warehouseUserService.findWarehouseIdByUserId(user.getId()));
        return Result.success(user);
     }

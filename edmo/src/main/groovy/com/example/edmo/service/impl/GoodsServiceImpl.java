@@ -13,13 +13,18 @@ import com.example.edmo.pojo.DTO.PageDTO;
 import com.example.edmo.pojo.VO.GoodsInWarehouseVO;
 import com.example.edmo.pojo.entity.Goods;
 import com.example.edmo.pojo.entity.Warehouse;
+import cn.hutool.json.JSONUtil;
 import com.example.edmo.service.Interface.GoodsService;
+import com.example.edmo.util.Constant.RedisConstant;
 import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 
 @Service
@@ -30,7 +35,61 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
     @Resource
     private WarehouseAdminMapper warehouseAdminMapper;
 
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
+@Override
+public boolean save(Goods entity) {
+    // 调用父类ServiceImpl的save方法保存商品实体
+    boolean result = super.save(entity);
+    if (result) {
+        // 新增商品后，清除仓库商品缓存（因为新商品会出现在仓库商品列表中）
+        var warehouseKeys = stringRedisTemplate.keys(RedisConstant.GOODS_WAREHOUSE_KEY + "*");
+        if (!warehouseKeys.isEmpty()) {
+            stringRedisTemplate.delete(warehouseKeys);
+        }
+    }
+    return result;
+}
+
+    //重写 updateById 方法，清除缓存
+    @Override
+    public boolean updateById(Goods entity) {
+        boolean result = super.updateById(entity);
+        if (result && entity != null && entity.getId() != null) {
+            // :*是通配符
+//            同一商品 ID 可能对应不同的 managedWarehouseIds，因此会有多个缓存 key，例如：
+//            goods:id:1:warehouses:[1,2]
+//            goods:id:1:warehouses:[1,2,3]
+//            goods:id:1:warehouses:[2,3]
+            var keys = stringRedisTemplate.keys(RedisConstant.GOODS_KEY + "id:" + entity.getId() + ":*");
+            if (!keys.isEmpty()) {
+                stringRedisTemplate.delete(keys);
+            }
+            var warehouseKeys = stringRedisTemplate.keys(RedisConstant.GOODS_WAREHOUSE_KEY + "*");
+            if (!warehouseKeys.isEmpty()) {
+                stringRedisTemplate.delete(warehouseKeys);
+            }
+        }
+        return result;
+    }
+
+    //重写 removeById 方法，清除缓存
+    @Override
+    public boolean removeById(Serializable id) {
+        boolean result = super.removeById(id);
+        if (result && id instanceof Integer) {
+            var keys = stringRedisTemplate.keys(RedisConstant.GOODS_KEY + "id:" + id + ":*");
+            if (!keys.isEmpty()) {
+                stringRedisTemplate.delete(keys);
+            }
+            var warehouseKeys = stringRedisTemplate.keys(RedisConstant.GOODS_WAREHOUSE_KEY + "*");
+            if (!warehouseKeys.isEmpty()) {
+                stringRedisTemplate.delete(warehouseKeys);
+            }
+        }
+        return result;
+    }
 
     @Override
     public boolean updateGoodsInWarehouse(Goods goods) {
@@ -38,7 +97,20 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
                 .<Goods>update()
                 .eq("id", goods.getId())
                 .set("warehouse_id", goods.getWarehouseId());
-        return goodsMapper.update(goods, wrapper) > 0;
+        boolean result = goodsMapper.update(goods, wrapper) > 0;
+        
+        // 清除相关缓存
+        if (result && goods.getId() != null) {
+            var keys = stringRedisTemplate.keys(RedisConstant.GOODS_KEY + "id:" + goods.getId() + ":*");
+            if (!keys.isEmpty()) {
+                stringRedisTemplate.delete(keys);
+            }
+            var warehouseKeys = stringRedisTemplate.keys(RedisConstant.GOODS_WAREHOUSE_KEY + "*");
+            if (!warehouseKeys.isEmpty()) {
+                stringRedisTemplate.delete(warehouseKeys);
+            }
+        }
+        return result;
     }
 
     @Override
@@ -50,7 +122,20 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
                 .set("status", 0)
                 .set("update_time",goodsDTO.getUpdateTime())
                 .set("update_user",goodsDTO.getUpdateUser());
-        return goodsMapper.update(wrapper) > 0;
+        boolean result = goodsMapper.update(wrapper) > 0;
+        
+        // 清除相关缓存
+        if (result && goodsDTO.getId() != null) {
+            var keys = stringRedisTemplate.keys(RedisConstant.GOODS_KEY + "id:" + goodsDTO.getId() + ":*");
+            if (!keys.isEmpty()) {
+                stringRedisTemplate.delete(keys);
+            }
+            var warehouseKeys = stringRedisTemplate.keys(RedisConstant.GOODS_WAREHOUSE_KEY + "*");
+            if (!warehouseKeys.isEmpty()) {
+                stringRedisTemplate.delete(warehouseKeys);
+            }
+        }
+        return result;
     }
 
     @Override
@@ -69,23 +154,60 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
 
     @Override
     public Goods findGoodsById(Integer id,List<Integer> managedWarehouseIds) {
+        // 构建缓存 key
+        String cacheKey = RedisConstant.GOODS_KEY + "id:" + id + ":warehouses:" + managedWarehouseIds.toString();
+        
+        // 尝试从缓存获取
+        String cacheValue = stringRedisTemplate.opsForValue().get(cacheKey);
+        if (cacheValue != null) {
+            // 缓存命中，更新过期时间
+            stringRedisTemplate.expire(cacheKey, RedisConstant.GOODS_TTL, TimeUnit.MINUTES);
+            return JSONUtil.toBean(cacheValue, Goods.class);
+        }
+
+        // 缓存未命中，查询数据库
         Wrapper<Goods> wrapper = Wrappers
                 .<Goods>query()
                 .eq("id", id)
                 .eq("status", 1)
                 .in("warehouse_id", managedWarehouseIds);
-        return goodsMapper.selectOne(wrapper);
+        Goods goods = goodsMapper.selectOne(wrapper);
+        
+        // 存入缓存
+        if (goods != null) {
+            stringRedisTemplate.opsForValue().set(cacheKey, JSONUtil.toJsonStr(goods), 
+                    RedisConstant.GOODS_TTL, TimeUnit.MINUTES);
+        }
+        return goods;
     }
 
     @Override
     public List<Goods> findGoodsByNameLike(String name,List<Integer> managedWarehouseIds) {
+        // 构建缓存 key
+        String cacheKey = RedisConstant.GOODS_WAREHOUSE_KEY + "name:" + name + 
+                ":warehouses:" + managedWarehouseIds.toString();
+        
+        // 尝试从缓存获取
+        String cacheValue = stringRedisTemplate.opsForValue().get(cacheKey);
+        if (cacheValue != null) {
+            // 缓存命中，更新过期时间
+            stringRedisTemplate.expire(cacheKey, RedisConstant.GOODS_WAREHOUSE_TTL, TimeUnit.MINUTES);
+            return JSONUtil.toList(cacheValue, Goods.class);
+        }
+
+        // 缓存未命中，查询数据库
         Wrapper<Goods> wrapper = Wrappers
                 .<Goods>query()
                 .like("name", name)
                 .eq("status", 1)
                 .in("warehouse_id", managedWarehouseIds)
                 .orderByDesc("id");
-        return goodsMapper.selectList(wrapper);
+        List<Goods> goodsList = goodsMapper.selectList(wrapper);
+        
+        // 存入缓存
+        stringRedisTemplate.opsForValue().set(cacheKey, JSONUtil.toJsonStr(goodsList), 
+                RedisConstant.GOODS_WAREHOUSE_TTL, TimeUnit.MINUTES);
+        return goodsList;
     }
 
     @Override
@@ -94,6 +216,7 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
                 .<Goods>query()
                 .eq("status", 1)
                 .in("warehouse_id", managedWarehouseIds)
+                .like(pageDTO.getParam() != null && pageDTO.getParam().containsKey("name"), "name", pageDTO.getParam().get("name"))
                 .orderByDesc("id");
 
         Page<Goods> page=new Page<>();
@@ -105,6 +228,18 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
 
     @Override
     public GoodsInWarehouseVO findGoodsByWarehouseId(Integer warehouseId, List<Integer> managedWarehouseIds) {
+        // 构建缓存 key
+        String cacheKey = RedisConstant.GOODS_WAREHOUSE_KEY + warehouseId + ":warehouses:" + managedWarehouseIds.toString();
+        
+        // 尝试从缓存获取
+        String cacheValue = stringRedisTemplate.opsForValue().get(cacheKey);
+        if (cacheValue != null) {
+            // 缓存命中，更新过期时间
+            stringRedisTemplate.expire(cacheKey, RedisConstant.GOODS_WAREHOUSE_TTL, TimeUnit.MINUTES);
+            return JSONUtil.toBean(cacheValue, GoodsInWarehouseVO.class);
+        }
+
+        // 缓存未命中，查询数据库
         GoodsInWarehouseVO  goodsInWarehouseVO = new GoodsInWarehouseVO();
         BeanUtils.copyProperties(warehouseAdminMapper.selectById(warehouseId),goodsInWarehouseVO);
 
@@ -116,11 +251,27 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
                 .orderByDesc("id");
 
         goodsInWarehouseVO.setGoods(goodsMapper.selectList(wrapper));
+        
+        // 存入缓存
+        stringRedisTemplate.opsForValue().set(cacheKey, JSONUtil.toJsonStr(goodsInWarehouseVO), 
+                RedisConstant.GOODS_WAREHOUSE_TTL, TimeUnit.MINUTES);
         return goodsInWarehouseVO;
     }
 
     @Override
     public List<GoodsInWarehouseVO> findGoodsAllByManagedWarehouseIds(List<Integer> managedWarehouseIds) {
+        // 构建缓存 key
+        String cacheKey = RedisConstant.GOODS_WAREHOUSE_KEY + "all:warehouses:" + managedWarehouseIds.toString();
+        
+        // 尝试从缓存获取
+        String cacheValue = stringRedisTemplate.opsForValue().get(cacheKey);
+        if (cacheValue != null) {
+            // 缓存命中，更新过期时间
+            stringRedisTemplate.expire(cacheKey, RedisConstant.GOODS_WAREHOUSE_TTL, TimeUnit.MINUTES);
+            return JSONUtil.toList(cacheValue, GoodsInWarehouseVO.class);
+        }
+
+        // 缓存未命中，查询数据库
         QueryWrapper<Warehouse> wrapper2=Wrappers
                 .<Warehouse>query()
                 //列表用in
@@ -128,7 +279,12 @@ public class GoodsServiceImpl extends ServiceImpl<GoodsMapper, Goods> implements
                 .orderByDesc("id");
         List<Warehouse> warehouses = warehouseAdminMapper.selectList(wrapper2);
 
-        return fillGoods(warehouses, null);
+        List<GoodsInWarehouseVO> result = fillGoods(warehouses, null);
+        
+        // 存入缓存
+        stringRedisTemplate.opsForValue().set(cacheKey, JSONUtil.toJsonStr(result), 
+                RedisConstant.GOODS_WAREHOUSE_TTL, TimeUnit.MINUTES);
+        return result;
     }
 
     @Override
