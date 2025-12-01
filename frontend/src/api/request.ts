@@ -170,13 +170,17 @@ class ApiRequest {
     }
   }
 
-  private clearAuthAndRedirect() {
+  private async clearAuthAndRedirect() {
     console.log('清除认证信息并跳转到登录页')
     const authStore = useAuthStore()
-    authStore.logout()
+    try {
+      await authStore.logout()
+    } catch (error) {
+      console.error('调用logout接口失败:', error)
+    }
     // 延迟跳转，避免在请求处理过程中立即跳转
     setTimeout(() => {
-    window.location.href = '/login'
+      window.location.href = '/login'
     }, 100)
   }
 

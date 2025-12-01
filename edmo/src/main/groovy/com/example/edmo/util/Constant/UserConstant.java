@@ -10,4 +10,6 @@ public class UserConstant {
     public static String FALSE_MOD="修改失败";
     public static String FALSE_DELETE="删除失败";
     public static String FALSE_GET="验证码发送过于频繁，请稍后再试";
+    public static String REFRESH_TOKEN_INVALID_OR_EXPIRED = "RefreshToken无效或已过期";
+    public static String FALSE_REFRESH_TOKEN = "RefreshToken无效";
 }

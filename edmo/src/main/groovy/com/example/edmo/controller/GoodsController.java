@@ -5,6 +5,7 @@ import com.example.edmo.annotation.AutoFillList;
 import com.example.edmo.pojo.entity.User;
 import com.example.edmo.service.Interface.OperationLogService;
 import com.example.edmo.service.Interface.WarehouseUserService;
+import com.example.edmo.security.RequireOperator;
 import com.example.edmo.util.Constant.CodeConstant;
 import com.example.edmo.util.Constant.GoodsConstant;
 import com.example.edmo.util.Constant.ValidationConstant;
@@ -59,6 +60,7 @@ public class GoodsController {
             @ApiResponse(responseCode = "400", description = "创建失败或仓库不存在或无管理权限")
     })
     @PostMapping("/save")
+    @RequireOperator
     @AutoFill(value = OperationType.INSERT)
     @Transactional(rollbackFor = Exception.class)
     public Result saveGoods(@Valid @RequestBody GoodsDTO goodsDTO) {
@@ -88,6 +90,7 @@ public class GoodsController {
             @ApiResponse(responseCode = "400", description = "创建失败或仓库不一致或仓库不存在或无管理权限")
     })
     @PostMapping("/saveListInSameWarehouse")
+    @RequireOperator
     @AutoFillList(value = OperationType.INSERT)
     @Transactional(rollbackFor = Exception.class)
     public Result saveGoodsListInSameWarehouse(@RequestBody @NotEmpty(message = "商品列表不能为空") @Valid List<GoodsDTO> goodsDTOList) {
@@ -134,6 +137,7 @@ public class GoodsController {
             @ApiResponse(responseCode = "400", description = "修改失败或商品不存在或商品已删除（status=0）或无管理权限或尝试修改仓库ID")
     })
     @PutMapping("/mod/message")
+    @RequireOperator
     @AutoFill(value = OperationType.UPDATE)
     @Transactional(rollbackFor = Exception.class)
     public Result modMessage(@Valid @RequestBody GoodsDTO goodsDTO) {
@@ -165,6 +169,7 @@ public class GoodsController {
             @ApiResponse(responseCode = "400", description = "修改失败或商品不存在或仓库不存在或无管理权限（需要同时管理原仓库和目标仓库）")
     })
     @PutMapping("/mod/warehouse")
+    @RequireOperator
     @AutoFill(value = OperationType.UPDATE)
     @Transactional(rollbackFor = Exception.class)
     public Result modWarehouse(@Valid @RequestBody GoodsDTO goodsDTO) {
@@ -195,6 +200,7 @@ public class GoodsController {
             @ApiResponse(responseCode = "400", description = "删除失败或商品不存在或商品已删除（status=0）或无管理权限")
     })
     @DeleteMapping("/delete")
+    @RequireOperator
     @AutoFill(value = OperationType.UPDATE)
     @Transactional(rollbackFor = Exception.class)
     public Result deleteGoods(@Valid @RequestBody GoodsDTO goodsDTO) {

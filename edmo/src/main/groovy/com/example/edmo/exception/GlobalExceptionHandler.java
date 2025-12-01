@@ -16,7 +16,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<Result> handleRuntimeException(BaseException e) {
-        log.error("业务异常: {}", e.getMessage());
+        log.warn("业务异常: {}", e.getMessage());
         int httpStatus = 401;
         return ResponseEntity.status(httpStatus).body(Result.fail(e.getCode(), e.getMessage()));
     }

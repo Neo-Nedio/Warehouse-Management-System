@@ -1,6 +1,7 @@
 package com.example.edmo.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.example.edmo.security.RequireAdmin;
 import com.example.edmo.util.Constant.CodeConstant;
 import com.example.edmo.util.Constant.ValidationConstant;
 import com.example.edmo.util.Constant.WarehouseConstant;
@@ -54,6 +55,7 @@ public class WarehouseAdminController {
             @ApiResponse(responseCode = "400", description = "创建失败或参数验证失败")
     })
     @PostMapping("/save")
+    @RequireAdmin
     public Result save(@Valid @RequestBody WarehouseDTO warehouseDTO) {
         try {
             if ( warehouseService.save(new Warehouse(warehouseDTO))) {
@@ -72,6 +74,7 @@ public class WarehouseAdminController {
             @ApiResponse(responseCode = "400", description = "修改失败或仓库不存在或参数验证失败")
     })
     @PutMapping("/mod")
+    @RequireAdmin
     public Result mod(@Valid @RequestBody WarehouseDTO warehouseDTO) {
         try {
             if ( warehouseService.updateById(new Warehouse(warehouseDTO))) {
@@ -91,6 +94,7 @@ public class WarehouseAdminController {
             @ApiResponse(responseCode = "400", description = "删除失败或仓库不存在")
     })
     @DeleteMapping("/delete")
+    @RequireAdmin
     public Result delete(@Parameter(description = "仓库ID（必须大于0）", required = true, example = "1")
                         @Positive(message = ValidationConstant.ID) @RequestParam Integer id) {
         try {
@@ -108,6 +112,7 @@ public class WarehouseAdminController {
 
     @Operation(summary = "根据名称模糊查询仓库", description = "根据仓库名称模糊查询仓库列表，按id降序排列。仓库名称长度2-10字符")
     @GetMapping("/findByNameLike")
+    @RequireAdmin
     public Result nameLike(@Parameter(description = "仓库名称关键字（支持模糊匹配）", example = "仓库A")
                            @RequestParam String name) {
         return Result.success(warehouseService.findWarehousesByNameLike(name));
@@ -115,6 +120,7 @@ public class WarehouseAdminController {
 
     @Operation(summary = "分页查询仓库", description = "根据条件分页查询仓库列表，按id降序排列。PageDTO参数：pageSize（默认20）、pageNum（默认1）、param（HashMap，可包含name字段用于模糊查询仓库名称）。如果param中包含name且不为空，则按名称模糊查询；否则查询所有仓库")
     @PostMapping("/listPage")
+    @RequireAdmin
     public Result listPage(@RequestBody PageDTO pageDTO) {
         Page<Warehouse> page= warehouseService.findWarehousesByNameLike(pageDTO);
         return Result.success(page.getRecords());
@@ -122,6 +128,7 @@ public class WarehouseAdminController {
 
     @Operation(summary = "根据ID查询仓库", description = "根据仓库ID查询仓库详细信息。返回字段：id、name（2-10字符）、description（4-30字符）")
     @GetMapping("/findById")
+    @RequireAdmin
     public Result findById(@Parameter(description = "仓库ID（必须大于0）", required = true, example = "1")
                            @Positive(message = ValidationConstant.ID) @RequestParam Integer id) {
         return Result.success(warehouseService.getById(id));
@@ -134,6 +141,7 @@ public class WarehouseAdminController {
             @ApiResponse(responseCode = "400", description = "创建失败或仓库或用户不存在或关系已存在")
     })
     @PostMapping("/saveRelation")
+    @RequireAdmin
     @Transactional(rollbackFor = Exception.class)
     public Result saveRelation(@Valid @RequestBody WarehouseAndUserDTO warehouseAndUserDTO) {
         try {
@@ -161,6 +169,7 @@ public class WarehouseAdminController {
             @ApiResponse(responseCode = "400", description = "修改失败或关系不存在或仓库或用户不存在")
     })
     @PutMapping("/modRelation")
+    @RequireAdmin
     @Transactional(rollbackFor = Exception.class)
     public Result modRelation(@Valid @RequestBody WarehouseAndUserDTO warehouseAndUserDTO) {
         try {
@@ -185,6 +194,7 @@ public class WarehouseAdminController {
             @ApiResponse(responseCode = "400", description = "删除失败或关系不存在")
     })
     @DeleteMapping("/deleteRelation")
+    @RequireAdmin
     public Result deleteRelation(@Parameter(description = "用户ID（必须大于0）", required = true, example = "1")
                                  @Positive(message = ValidationConstant.ID) @RequestParam Integer userID,
                                  @Parameter(description = "仓库ID（必须大于0）", required = true, example = "1")
@@ -202,11 +212,13 @@ public class WarehouseAdminController {
 
     @Operation(summary = "查询所有关系", description = "查询所有仓库与用户的关系（需要管理员权限）。返回List<WarehouseAndUser>，包含所有关系记录（Id、warehouseId、userId）")
     @GetMapping("findAllRelation")
+    @RequireAdmin
     public Result findAllRelation() {
         return Result.success(warehouseUserService.list());
     }
     @Operation(summary = "查询指定关系", description = "根据用户ID和仓库ID查询关系（需要管理员权限）。返回WarehouseAndUser对象，如果关系不存在则返回null")
     @GetMapping("findRelation")
+    @RequireAdmin
     public Result findRelation(@Parameter(description = "用户ID（必须大于0）", required = true, example = "1")
                                @Positive(message = ValidationConstant.ID) @RequestParam Integer userID,
                                @Parameter(description = "仓库ID（必须大于0）", required = true, example = "1")
@@ -216,6 +228,7 @@ public class WarehouseAdminController {
 
     @Operation(summary = "按用户查看关系", description = "根据用户分页查询，返回用户及其管理的仓库列表（需要管理员权限）。PageDTO参数：pageSize（默认20）、pageNum（默认1）、param（HashMap，可包含name字段用于模糊查询用户名）。返回List<UserHaveWarehouseVO>，每个元素包含用户信息（id、name、email、phone、sex、age、roleId，不包含password）和该用户管理的仓库列表（managedWarehouse）。如果用户没有管理的仓库，则返回空列表（避免SQL错误）")
     @PostMapping("/findRelationForUser")
+    @RequireAdmin
     public Result findRelationForUser(@RequestBody PageDTO pageDTO) {
         List<User> users = userService.findUsersByNameLike(pageDTO);
 
@@ -236,6 +249,7 @@ public class WarehouseAdminController {
 
     @Operation(summary = "按仓库查看关系", description = "根据仓库分页查询，返回仓库及其关联的用户列表（需要管理员权限）。PageDTO参数：pageSize（默认20）、pageNum（默认1）、param（HashMap，可包含name字段用于模糊查询仓库名称）。返回List<WarehouseHaveUserVO>，每个元素包含仓库信息（id、name、description）和该仓库关联的用户列表（users）。如果仓库没有关联的用户，则返回空列表（避免SQL错误）")
     @PostMapping("/findRelationForWarehouse")
+    @RequireAdmin
     public Result findRelationForWarehouse(@RequestBody PageDTO pageDTO) {
         List<Warehouse> warehouses =  warehouseService.findWarehousesByNameLike(pageDTO).getRecords();
 

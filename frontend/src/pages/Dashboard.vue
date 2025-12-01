@@ -48,9 +48,14 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
-const handleLogout = () => {
-  authStore.logout()
-  router.push('/login')
+const handleLogout = async () => {
+  try {
+    await authStore.logout()
+  } catch (error) {
+    console.error('退出登录失败:', error)
+  } finally {
+    router.push('/login')
+  }
 }
 </script>
 

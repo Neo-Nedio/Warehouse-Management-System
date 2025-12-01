@@ -4,11 +4,13 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.edmo.service.Interface.WarehouseUserService;
+import com.example.edmo.security.RequireAdmin;
 import com.example.edmo.util.Constant.CodeConstant;
 import com.example.edmo.util.Constant.JwtConstant;
 import com.example.edmo.util.Constant.RedisConstant;
 import com.example.edmo.util.Constant.UserConstant;
 import com.example.edmo.util.Jwt.JwtUtil;
+import cn.hutool.json.JSONUtil;
 import com.example.edmo.pojo.DTO.PageDTO;
 import com.example.edmo.pojo.DTO.LoginRequest;
 import com.example.edmo.pojo.DTO.UserDTO;
@@ -157,26 +159,50 @@ public class UserController {
     public Result refresh(@Parameter(description = "刷新Token（RefreshToken）", required = true)
                           @RequestParam @NotBlank(message = "RefreshToken不能为空") String RefreshToken) {
         try {
-            // 验证Refresh Token（只验证JWT本身，不验证Redis）
+            // 验证Refresh Token是否在Redis中存在
+            String refreshTokenKey = RedisConstant.REFRESH_TOKEN_KEY + RefreshToken;
+            String userIdStr = stringRedisTemplate.opsForValue().get(refreshTokenKey);
+            if (userIdStr == null) {
+                throw new UserException(CodeConstant.user, UserConstant.REFRESH_TOKEN_INVALID_OR_EXPIRED);
+            }
+
+            // 验证Refresh Token的JWT格式
             Algorithm algorithm = Algorithm.HMAC256(JwtConstant.SECRET_KEY);
             DecodedJWT jwt = JWT.require(algorithm).build().verify(RefreshToken);
 
-            Integer userId = jwt.getClaim("id").asInt();
+            Integer userId = Integer.parseInt(userIdStr);
+            Integer jwtUserId = jwt.getClaim("id").asInt();
+            
+            // 验证Redis中的userId与JWT中的userId是否一致
+            if (!userId.equals(jwtUserId)) {
+                throw new UserException(CodeConstant.user, UserConstant.FALSE_REFRESH_TOKEN);
+            }
 
             // 获取用户信息
             User user = userService.getById(userId);
             if (user == null) throw new UserException(CodeConstant.user,UserConstant.NULL_USER);
+            
+            // 删除旧的refreshToken
+            stringRedisTemplate.delete(refreshTokenKey);
+            
+            // 生成新的token并存储到Redis
             return sendToken(user);
         }catch (Exception e) {
             throw new UserException(CodeConstant.user,e.getMessage());
         }
     }
 
-    @Operation(summary = "退出登录", description = "用户退出登录")
+    @Operation(summary = "退出登录", description = "用户退出登录，删除Redis中的token和用户信息")
     @ApiResponse(responseCode = "200", description = "退出登录成功")
     @GetMapping("logOut")
-    public Result logout() {
-        // 不再需要删除Redis中的refreshToken，因为不再存储
+    //required = false：如果没有 token 也不报错（可能已过期）
+    public Result logout(@RequestHeader(value = "token", required = false) String token) {
+        if (token != null && !token.isEmpty()) {
+            // 删除Redis中的accessToken
+            String tokenKey = RedisConstant.TOKEN_KEY + token;
+            stringRedisTemplate.delete(tokenKey);
+        }
+        
         return Result.success();
     }
 
@@ -187,7 +213,25 @@ public class UserController {
         String refreshToken = JwtUtil.createToken(user, JwtConstant.REFRESH_TOKEN_EXPIRE);
         String AccessToken = JwtUtil.createToken(user, JwtConstant.ACCESS_TOKEN_EXPIRE);
 
-        // 返回双token和user（不包含密码）
+        // 将user信息存储到Redis中（使用accessToken作为key）
+        String tokenKey = RedisConstant.TOKEN_KEY + AccessToken;
+        stringRedisTemplate.opsForValue().set(
+            tokenKey,
+            JSONUtil.toJsonStr(user),
+            RedisConstant.TOKEN_TTL,
+            TimeUnit.MINUTES
+        );
+
+        // 将refreshToken也存储到Redis中（用于刷新时验证）
+        String refreshTokenKey = RedisConstant.REFRESH_TOKEN_KEY + refreshToken;
+        stringRedisTemplate.opsForValue().set(
+            refreshTokenKey,
+            String.valueOf(user.getId()),
+            RedisConstant.REFRESH_TOKEN_TTL,
+            TimeUnit.MINUTES
+        );
+
+        // 返回双token和user（不包含密码，密码被jsonIgnore）
         Map<String, Object> result = new HashMap<>();
         result.put("user", user);
         result.put("tokens", Map.of(
@@ -233,6 +277,7 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "创建失败或用户已存在或参数验证失败")
     })
     @PostMapping("/save")
+    @RequireAdmin
     public Result save(@Valid @RequestBody UserDTO userDTO) {
         try {
             userDTO.setPassword(encoder.encode(userDTO.getPassword()));
@@ -254,6 +299,7 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "修改失败或用户不存在或参数验证失败")
     })
     @PutMapping("/mod")
+    @RequireAdmin
     public Result mod(@Valid @RequestBody UserDTO userDTO) {
         try {
             // 如果提供了密码，则加密；如果为空或null，则不更新密码字段
@@ -294,6 +340,7 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "删除失败或用户不存在")
     })
     @DeleteMapping("/delete")
+    @RequireAdmin
     public Result delete(@Parameter(description = "用户ID", required = true, example = "1")
                          @Positive(message = "ID必须大于0") @RequestParam Integer id) {
         try {

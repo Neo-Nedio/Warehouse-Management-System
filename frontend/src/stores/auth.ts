@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { User, LoginResponse } from '@/types'
+import { userApi } from '@/api/user'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -19,11 +20,21 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('refreshToken', response.tokens.refreshToken)
   }
 
-  function logout() {
-    user.value = null
-    localStorage.removeItem('user')
-    localStorage.removeItem('accessToken')
-    localStorage.removeItem('refreshToken')
+  async function logout() {
+    try {
+      // 先调用后端logout接口，删除Redis中的token
+      // token会通过request拦截器自动添加到请求头
+      await userApi.logout()
+    } catch (error) {
+      // 即使后端调用失败，也清除本地存储
+      console.error('调用logout接口失败:', error)
+    } finally {
+      // 清除本地存储
+      user.value = null
+      localStorage.removeItem('user')
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
+    }
   }
 
   function updateUser(updatedUser: User) {

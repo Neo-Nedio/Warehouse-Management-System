@@ -61,7 +61,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if(findUserByEmail( email)==null) return 0;
 
         // 频率限制检查
-        String limitKey = "user:code:limit:" + email;
+        String limitKey = RedisConstant.LOGIN_CODE_LIMIT_KEY + email;
 
         // 检查1分钟内是否已发送
         String lastSendTime = stringRedisTemplate.opsForValue().get(limitKey);
@@ -85,7 +85,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         sender.send(message);
 
         stringRedisTemplate.opsForValue().set(limitKey, String.valueOf(System.currentTimeMillis()),
-                1, TimeUnit.MINUTES);
+                RedisConstant.LOGIN_CODE_LIMIT_TTL, TimeUnit.MINUTES);
 
         return code;
     }

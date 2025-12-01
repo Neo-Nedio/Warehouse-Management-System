@@ -1,8 +1,6 @@
 package com.example.edmo.util.Constant;
 
-/**
- * Redis 常量类
- */
+
 public class RedisConstant {
     // 验证码相关
     public static final String LOGIN_CODE_KEY = "user:code:";
@@ -27,4 +25,10 @@ public class RedisConstant {
     public static final long WAREHOUSE_TTL = 30L;  // 30分钟
     public static final String WAREHOUSE_LIST_KEY = "warehouse:list:";
     public static final long WAREHOUSE_LIST_TTL = 10L;  // 10分钟
+
+    // Token会话相关
+    public static final String TOKEN_KEY = "token:";
+    public static final long TOKEN_TTL = 30L;  // 30分钟
+    public static final String REFRESH_TOKEN_KEY = "refresh_token:";
+    public static final long REFRESH_TOKEN_TTL = 7 * 24 * 60L;  // 7天
 }

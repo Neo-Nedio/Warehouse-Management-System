@@ -1,5 +1,6 @@
 package com.example.edmo.controller;
 
+import com.example.edmo.security.RequireAdmin;
 import com.example.edmo.exception.OperationLogException;
 import com.example.edmo.pojo.DTO.OperationLogDTO;
 import com.example.edmo.pojo.DTO.PageDTO;
@@ -40,6 +41,7 @@ public class LogAdminController {
 
     @Operation(summary = "查询所有日志", description = "获取所有操作日志列表，按id降序排列。返回字段：id、operateType（操作类型）、goodsId（商品ID）、goodsName（商品名称，2-10字符）、formerWarehouseId（原仓库ID）、newWarehouseId（新仓库ID）、updateTime（操作时间）、updateUser（操作人，2-10字符）")
     @GetMapping("/findAll")
+    @RequireAdmin
     public Result findAll(){
         return Result.success(operationLogService.list());
     }
@@ -50,6 +52,7 @@ public class LogAdminController {
             @ApiResponse(responseCode = "400", description = "操作类型错误（不在1-4范围内）")
     })
     @GetMapping("/findAllByType/{type}")
+    @RequireAdmin
     public Result findAllByType(@Parameter(description = "操作类型（1-4）：1-入库、2-修改信息、3-更换仓库、4-出库", required = true, example = "1")
                                 @PathVariable Integer type){
         String typename = validateAndConvertType(type);
@@ -63,6 +66,7 @@ public class LogAdminController {
             @ApiResponse(responseCode = "400", description = "操作类型错误（不在1-4范围内）")
     })
     @PostMapping("/findAllByTypeAndPage")
+    @RequireAdmin
     public Result findAllByTypeAndPage(@RequestBody PageDTO pageDTO){
         Integer type=(Integer) pageDTO.getParam().get("type");
         String typename = validateAndConvertType(type);
@@ -75,6 +79,7 @@ public class LogAdminController {
             @ApiResponse(responseCode = "400", description = "操作类型错误（不在1-4范围内）或仓库ID无效")
     })
     @GetMapping("/findAllByTypeAndWarehouseId")
+    @RequireAdmin
     public Result findAllByTypeAndWarehouseId(@Parameter(description = "操作类型（1-4）：1-入库、2-修改信息、3-更换仓库、4-出库", example = "1")
                                                @RequestParam Integer type,
                                                @Parameter(description = "仓库ID（必须大于0）", required = true, example = "1")
@@ -86,6 +91,7 @@ public class LogAdminController {
 
     @Operation(summary = "根据仓库ID查询日志", description = "查询指定仓库的所有操作日志。查询条件：former_warehouse_id或new_warehouse_id匹配仓库ID（即该仓库作为原仓库或新仓库的所有操作记录）")
     @GetMapping("/findByWarehouseId/{warehouseId}")
+    @RequireAdmin
     public Result findByWarehouseId(@Parameter(description = "仓库ID（必须大于0）", required = true, example = "1")
                                    @PathVariable @Positive(message = ValidationConstant.ID) Integer warehouseId){
         return Result.success(operationLogService.findByWarehouseId(warehouseId));
@@ -93,6 +99,7 @@ public class LogAdminController {
 
     @Operation(summary = "根据用户名查询日志", description = "根据操作人姓名查询操作日志。先根据用户名模糊查询用户列表，然后查询每个用户的所有操作日志。返回List<UserHavaOperationVO>，每个元素包含用户信息（id、name）和该用户的操作日志列表。操作人名称长度2-10字符")
     @GetMapping("/findByUpdateName/{name}")
+    @RequireAdmin
     public Result findByUpdateName(@Parameter(description = "用户名（支持模糊匹配）", required = true, example = "张三")
                                    @PathVariable String name){
         List<User> users = userService.findUsersByNameLike(name);
@@ -107,6 +114,7 @@ public class LogAdminController {
 
     @Operation(summary = "根据商品名称查询日志", description = "根据商品名称模糊查询相关操作日志。商品名称长度2-10字符")
     @GetMapping("/findByGoodsName")
+    @RequireAdmin
     public Result findByGoodsName(@Parameter(description = "商品名称（支持模糊匹配）", required = true, example = "商品A")
                                   @RequestParam String name){
         return Result.success(operationLogService.findByGoodsName(name));
@@ -114,6 +122,7 @@ public class LogAdminController {
 
     @Operation(summary = "根据商品ID查询日志", description = "根据商品ID精确查询相关操作日志，返回该商品的所有操作记录")
     @GetMapping("/findByGoodsId/{goodsId}")
+    @RequireAdmin
     public Result findByGoodsId(@Parameter(description = "商品ID（必须大于0）", required = true, example = "1")
                                 @PathVariable @Positive(message = ValidationConstant.ID) Integer goodsId){
         return Result.success(operationLogService.findByGoodsId(goodsId));
@@ -121,6 +130,7 @@ public class LogAdminController {
 
     @Operation(summary = "任意条件查询日志", description = "根据多个条件组合查询操作日志，按id降序排列。OperationLogDTO查询条件：id（精确匹配）、operateType（精确匹配，支持数字1-4或类型名称：入库、修改信息、更换仓库、出库）、goodsId（精确匹配）、goodsName（模糊匹配，2-10字符）、formerWarehouseId（精确匹配）、newWarehouseId（精确匹配）、updateUser（模糊匹配，2-10字符）、startTime/endTime（update_time时间范围，必须都是过去时间）。所有条件都是可选的，可以任意组合。operateType如果为空字符串或null，则忽略该条件")
     @PostMapping("/findByAnyCondition")
+    @RequireAdmin
     public Result findByAnyCondition(@Valid @RequestBody OperationLogDTO operationLogDTO) {
         //todo 检查 operateType 是否为空或空字符串
         if (operationLogDTO.getOperateType() == null || operationLogDTO.getOperateType().trim().isEmpty()) {
@@ -143,6 +153,7 @@ public class LogAdminController {
 
     @Operation(summary = "根据时间范围查询日志", description = "根据开始时间和结束时间查询操作日志（基于update_time字段）。查询条件：update_time >= startTime 且 update_time <= endTime。startTime和endTime都必须是过去时间")
     @GetMapping("/findByTime")
+    @RequireAdmin
     public Result findByTime(@Parameter(description = "开始时间（必须是过去时间）", required = true, example = "2024-01-01T00:00:00")
                              @RequestParam @Past(message = ValidationConstant.TIME) LocalDateTime startTime,
                              @Parameter(description = "结束时间（必须是过去时间）", required = true, example = "2024-12-31T23:59:59")
