@@ -43,26 +43,31 @@ class ApiRequest {
     this.instance.interceptors.response.use(
       (response: AxiosResponse<ApiResult>) => {
         const { data } = response
+        // 统一按照后端自定义 code 判断
         if (data.code === 200) {
+          // 业务成功
           return data
+        } else if (data.code === 1) {
+          // code == 1 对应后端 CodeConstant.token，表示 token 相关错误
+          console.log('检测到token相关错误(code=1):', data.msg)
+          return this.handleTokenError(response.config)
         } else {
-          // 检查是否是token相关的错误
-          if (data.msg && (data.msg.includes('token') || data.msg.includes('登录') || data.msg.includes('无效') || data.msg.includes('过期'))) {
-            console.log('检测到token相关错误:', data.msg)
-            return this.handleTokenError(response.config)
-          }
+          // 其他业务错误（包括登录失败等），直接把后端 msg 抛给页面
           return Promise.reject(new Error(data.msg || '请求失败'))
         }
       },
       async (error) => {
         if (error.response) {
           const { status, data } = error.response
-          
-          // 401 未授权或 token 相关错误
-          if (status === 401 || (data?.msg && (data.msg.includes('token') || data.msg.includes('登录') || data.msg.includes('无效') || data.msg.includes('过期')))) {
-            console.log('检测到401或token相关错误:', status, data?.msg)
+          const code = data?.code
+
+          // 仅当 HTTP 状态为 401 且自定义 code 为 token 类错误时，才走刷新 / 重新登录逻辑
+          if (status === 401 && code === 1) {
+            console.log('检测到401且code为token错误(code=1):', status, data?.msg)
             return this.handleTokenError(error.config)
           }
+
+          // 其余 401（例如登录账号或密码错误等）按普通业务错误处理，前端可直接显示后端 msg
           return Promise.reject(new Error(data?.msg || '请求失败'))
         } else if (error.request) {
           console.error('请求失败，可能是跨域问题:', error.message)

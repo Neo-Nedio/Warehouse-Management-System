@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-//todo前端登录页面返回结果与后端不一致，前端申请后端在用户无权限时前端无显示，学习在除日志服务层外其他服务层的redis
+//todo 学习redis
 @Tag(name = "用户管理", description = "用户相关接口，包括登录、注册、用户信息管理等")
 @Validated
 @RestController
