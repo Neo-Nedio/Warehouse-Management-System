@@ -12,17 +12,20 @@ import com.example.edmo.service.Interface.UserService;
 import com.example.edmo.service.Interface.WarehouseUserService;
 import cn.hutool.json.JSONUtil;
 import com.example.edmo.util.Constant.CodeConstant;
+import com.example.edmo.util.Constant.MqConstant;
 import com.example.edmo.util.Constant.RedisConstant;
 import com.example.edmo.util.Constant.UserConstant;
 import jakarta.annotation.Resource;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
 import java.security.SecureRandom;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -38,11 +41,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private StringRedisTemplate stringRedisTemplate;
 
     @Resource
-    JavaMailSender sender;
+    RabbitTemplate rabbitTemplate;
 
-    /**
-     * 重写 save 方法，清除列表缓存
-     */
     @Override
     public boolean save(User entity) {
         boolean result = super.save(entity);
@@ -73,16 +73,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
         SecureRandom secureRandom = new SecureRandom();
         int code = secureRandom.nextInt(900000) + 100000;
-        SimpleMailMessage message = new SimpleMailMessage();
-        //设置邮件标题
-        message.setSubject("验证码");
-        //设置邮件内容
-        message.setText("验证码是" + code + "，有效期为2分钟，请尽快使用");
-        //设置邮件发送给谁，可以多个，这里就发给你的QQ邮箱
-        message.setTo(email);
-        //邮件发送者，这里要与配置文件中的保持一致
-        message.setFrom("18276593770@163.com");
-        sender.send(message);
+
+        Map<String, Object> combinedData = new HashMap<>();
+        combinedData.put("code",code);
+        combinedData.put("email", email);
+        //FANOUT 不用设置路由，但是应该传入null防止数据被识别为路由
+        rabbitTemplate.convertAndSend(MqConstant.EMAIL_EXCHANGE_FANOUT, "", combinedData);
 
         stringRedisTemplate.opsForValue().set(limitKey, String.valueOf(System.currentTimeMillis()),
                 RedisConstant.LOGIN_CODE_LIMIT_TTL, TimeUnit.MINUTES);

@@ -22,6 +22,22 @@ spring:
           max-idle: 8
           min-idle: 0
           max-wait: 100ms
+  rabbitmq:
+    host: your_rabbitmq_host
+    port: 5672
+    username: your_rabbitmq_name
+    password: your_rabbitmq_password
+    listener:
+      simple:
+        prefetch: 1 # 每次只能获取一条消息，处理完成才能获取下一个消息
+        retry:
+          enabled: true # 启用重试机制
+          initial-interval: 1000 # 初始重试间隔（毫秒），1秒
+          max-attempts: 3 # 最大重试次数（包括第一次尝试，共3次）
+          multiplier: 2.0 # 重试间隔倍数（每次重试间隔 = 上次间隔 * 倍数）
+          max-interval: 10000 # 最大重试间隔（毫秒），10秒
+        default-requeue-rejected: false # 重试失败后不重新入队（避免无限循环）
+        acknowledge-mode: auto # 自动确认模式
 springdoc:
   api-docs:
     path: /v3/api-docs

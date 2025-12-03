@@ -8,6 +8,7 @@ import com.example.edmo.service.Interface.WarehouseUserService;
 import com.example.edmo.security.RequireOperator;
 import com.example.edmo.util.Constant.CodeConstant;
 import com.example.edmo.util.Constant.GoodsConstant;
+import com.example.edmo.util.Constant.MqConstant;
 import com.example.edmo.util.Constant.ValidationConstant;
 import com.example.edmo.util.Jwt.UserContext;
 import com.example.edmo.annotation.AutoFill;
@@ -27,6 +28,7 @@ import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Positive;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -52,7 +54,7 @@ public class GoodsController {
     WarehouseUserService warehouseUserService;
 
     @Resource
-    private OperationLogService operationLogService;
+    RabbitTemplate rabbitTemplate;
 
     @Operation(summary = "创建商品", description = "创建新商品，只能在自己管理的仓库中创建。GoodsDTO参数：name（2-10字符，必填）、price（正整数，必填）、number（正整数，必填）、warehouseId（正整数，必填，必须是已存在的仓库且用户有管理权限）。createTime、updateTime、createUser、updateUser会自动填充，id会自动生成。创建成功后会自动记录操作日志（INSERT类型）")
     @ApiResponses(value = {
@@ -74,7 +76,7 @@ public class GoodsController {
             if ( goodsService.save(goods) ){
                 //反过来获取id用于插入
                     goodsDTO.setId(goods.getId());
-                    operationLogService.addLog(goodsDTO);
+                    rabbitTemplate.convertAndSend(MqConstant.LOG_EXCHANGE_DIRECT,MqConstant.ADD_ROUTING_KEY,goodsDTO);
                     return Result.success();
                 } else {
                     throw new GoodsException(CodeConstant.goods, GoodsConstant.FALSE_SAVE);
@@ -120,7 +122,7 @@ public class GoodsController {
                 }
 
                 // 批量记录操作日志
-                operationLogService.batchAddLog(goodsDTOList);
+                rabbitTemplate.convertAndSend(MqConstant.LOG_EXCHANGE_DIRECT,MqConstant.BATCH_ADD_ROUTING_KEY,goodsDTOList);
                 return Result.success();
             } else {
                 throw new GoodsException(CodeConstant.goods, GoodsConstant.FALSE_SAVE);
@@ -153,7 +155,7 @@ public class GoodsController {
 
             if ( goodsService.updateById(new Goods(goodsDTO))){
                 goodsDTO.setWarehouseId(goods.getWarehouseId());
-                operationLogService.modMessage(goodsDTO);
+                rabbitTemplate.convertAndSend(MqConstant.LOG_EXCHANGE_DIRECT,MqConstant.MOD_MESSAGE_ROUTING_KEY,goodsDTO);
                 return Result.success();
             } else {
                 throw new GoodsException(CodeConstant.goods, GoodsConstant.FALSE_MOD);
@@ -184,7 +186,11 @@ public class GoodsController {
                 throw new GoodsException(CodeConstant.goods,GoodsConstant.NULL_ROLE);
 
             if ( goodsService.updateGoodsInWarehouse(new Goods(goodsDTO))){
-                operationLogService.modWarehouse(goods,goodsDTO);
+                Map<String, Object> combinedData = new HashMap<>();
+                combinedData.put("goods", goods);
+                combinedData.put("goodsDTO", goodsDTO);
+
+                rabbitTemplate.convertAndSend(MqConstant.LOG_EXCHANGE_DIRECT,MqConstant.MOD_WAREHOUSE_ROUTING_KEY,combinedData);
                 return Result.success();
             } else {
                 throw new GoodsException(CodeConstant.goods, GoodsConstant.FALSE_MOD);
@@ -215,7 +221,11 @@ public class GoodsController {
 
 
             if (goodsService.loginDeleteGoodsById(goodsDTO)){
-                operationLogService.delete(goods,goodsDTO);
+                Map<String, Object> combinedData = new HashMap<>();
+                combinedData.put("goods", goods);
+                combinedData.put("goodsDTO", goodsDTO);
+
+                rabbitTemplate.convertAndSend(MqConstant.LOG_EXCHANGE_DIRECT,MqConstant.DELETE_ROUTING_KEY,combinedData);
                 return Result.success();
             }else  {
                 throw new GoodsException(CodeConstant.goods, GoodsConstant.FALSE_DELETE);
