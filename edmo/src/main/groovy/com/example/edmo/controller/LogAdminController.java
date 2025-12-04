@@ -165,7 +165,7 @@ public class LogAdminController {
      * 验证操作类型并转换为类型名称
      * @param type 操作类型（1-4）
      * @return 操作类型名称
-     * @throws OperationLogException 如果类型不在1-4范围内
+     * @throws OperationLogException 如果类型不在1-4的范围内
      */
     private String validateAndConvertType(Integer type) {
         if (type == null || type < 1 || type > 4) {
