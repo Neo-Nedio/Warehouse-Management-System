@@ -24,7 +24,6 @@ import java.util.List;
 @Slf4j
 public class AutoFillAspect {
 
-    //execution(* com.example.edmo.controller.*.*(..)) &&
     @Pointcut("(execution(* com.example.edmo.controller.*.*(..))) && (@annotation(com.example.edmo.annotation.AutoFill))")
     public void autoFillPointCut() {
     }
@@ -70,7 +69,6 @@ public class AutoFillAspect {
         }
     }
 
-    //todo
     @Before("autoFillPointCutList()")
     public void autoFillListBefore(JoinPoint joinPoint) {
         //获取方法签名和注解

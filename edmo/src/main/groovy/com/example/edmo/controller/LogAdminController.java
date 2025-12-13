@@ -1,6 +1,6 @@
 package com.example.edmo.controller;
 
-import com.example.edmo.security.RequireAdmin;
+import com.example.edmo.annotation.RequireAdmin;
 import com.example.edmo.exception.OperationLogException;
 import com.example.edmo.pojo.DTO.OperationLogDTO;
 import com.example.edmo.pojo.DTO.PageDTO;
@@ -132,7 +132,7 @@ public class LogAdminController {
     @PostMapping("/findByAnyCondition")
     @RequireAdmin
     public Result findByAnyCondition(@Valid @RequestBody OperationLogDTO operationLogDTO) {
-        //todo 检查 operateType 是否为空或空字符串
+        //检查 operateType 是否为空或空字符串
         if (operationLogDTO.getOperateType() == null || operationLogDTO.getOperateType().trim().isEmpty()) {
             // 如果没有操作类型，直接使用 DTO 中的其他条件查询
             return Result.success(operationLogService.findByAnyCondition(operationLogDTO));
@@ -144,10 +144,10 @@ public class LogAdminController {
             String typename = validateAndConvertType(type);
             operationLogDTO.setOperateType(typename);
         } catch (NumberFormatException e) {
-            // 如果无法解析为整数，可能是已经是类型名称（如 "ADD"），直接使用
-            // 不做转换
+            // 如果无法解析为整数，可能是已经是类型名称，直接使用
         }
 
+        //进行最后查询
         return Result.success(operationLogService.findByAnyCondition(operationLogDTO));
     }
 
@@ -161,12 +161,6 @@ public class LogAdminController {
         return Result.success(operationLogService.findByTime(startTime,endTime));
     }
 
-    /**
-     * 验证操作类型并转换为类型名称
-     * @param type 操作类型（1-4）
-     * @return 操作类型名称
-     * @throws OperationLogException 如果类型不在1-4的范围内
-     */
     private String validateAndConvertType(Integer type) {
         if (type == null || type < 1 || type > 4) {
             throw new OperationLogException(CodeConstant.operationLog, OperateTypeConstant.FALSE_TYPE);

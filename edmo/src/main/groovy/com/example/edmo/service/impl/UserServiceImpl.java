@@ -18,7 +18,6 @@ import com.example.edmo.util.Constant.UserConstant;
 import jakarta.annotation.Resource;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
@@ -77,7 +76,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         Map<String, Object> combinedData = new HashMap<>();
         combinedData.put("code",code);
         combinedData.put("email", email);
-        //FANOUT 不用设置路由，但是应该传入null防止数据被识别为路由
+        //FANOUT 不用设置路由routingKey，但是应该传入null防止数据被识别为路由
         rabbitTemplate.convertAndSend(MqConstant.EMAIL_EXCHANGE_FANOUT, "", combinedData);
 
         stringRedisTemplate.opsForValue().set(limitKey, String.valueOf(System.currentTimeMillis()),
@@ -116,7 +115,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .<User>query()
                 .orderByDesc("id");
         
-        //todo如果param不为null且包含name参数，则添加like条件，防止刚进入系统时无条件发生错误
+        //如果param不为null且包含name参数，则添加like条件，防止刚进入系统时无条件发生错误
         if (pageDTO.getParam() != null && pageDTO.getParam().containsKey("name")) {
             String name = (String) pageDTO.getParam().get("name");
             if (name != null && !name.isEmpty()) {
@@ -219,7 +218,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             if (entity.getEmail() != null) {
                 stringRedisTemplate.delete(RedisConstant.USER_KEY + "email:" + entity.getEmail());
             }
-            // 清除列表缓存（使用 keys 匹配）
+            // 清除列表缓存
             var keys = stringRedisTemplate.keys(RedisConstant.USER_LIST_KEY + "*");
             if (!keys.isEmpty()) {
                 stringRedisTemplate.delete(keys);
@@ -238,7 +237,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             if (user.getEmail() != null) {
                 stringRedisTemplate.delete(RedisConstant.USER_KEY + "email:" + user.getEmail());
             }
-            // 清除列表缓存（使用 keys 匹配）
+            // 清除列表缓存
             var keys = stringRedisTemplate.keys(RedisConstant.USER_LIST_KEY + "*");
             if (!keys.isEmpty()) {
                 stringRedisTemplate.delete(keys);
@@ -247,9 +246,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return result;
     }
 
-    //todo
     private List<User> fillManagedWarehouseIds(List<User> users) {
         return users.stream()
+        //peek：返回相同的流
                 .peek(user -> user.setManagedWarehouseIds(
                         warehouseUserService.findWarehouseIdByUserId(user.getId())
                 ))

@@ -24,7 +24,9 @@ import org.springframework.stereotype.Service;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -57,15 +59,18 @@ public boolean save(Goods entity) {
     public boolean updateById(Goods entity) {
         boolean result = super.updateById(entity);
         if (result && entity != null && entity.getId() != null) {
-            // :*是通配符
-//            同一商品 ID 可能对应不同的 managedWarehouseIds，因此会有多个缓存 key，例如：
-//            goods:id:1:warehouses:[1,2]
-//            goods:id:1:warehouses:[1,2,3]
-//            goods:id:1:warehouses:[2,3]
-            var keys = stringRedisTemplate.keys(RedisConstant.GOODS_KEY + "id:" + entity.getId() + ":*");
+            // *是通配符
+            // 统一使用goods:warehouse:开头的key，清除所有相关缓存
+            // 同一商品 ID 可能对应不同的 managedWarehouseIds，因此会有多个缓存 key，例如：
+            // goods:warehouse:id:1:warehouses:[1,2]
+            // goods:warehouse:id:1:warehouses:[1,2,3]
+            // goods:warehouse:id:1:warehouses:[2,3]
+            // managedWarehouseIds不代表一个商品在多个仓库，而是用户管理的仓库ids
+            var keys = stringRedisTemplate.keys(RedisConstant.GOODS_WAREHOUSE_KEY + "id:" + entity.getId() + ":*");
             if (!keys.isEmpty()) {
                 stringRedisTemplate.delete(keys);
             }
+            // 清除所有仓库商品缓存（包括按名称、按仓库ID、所有商品等）
             var warehouseKeys = stringRedisTemplate.keys(RedisConstant.GOODS_WAREHOUSE_KEY + "*");
             if (!warehouseKeys.isEmpty()) {
                 stringRedisTemplate.delete(warehouseKeys);
@@ -79,10 +84,12 @@ public boolean save(Goods entity) {
     public boolean removeById(Serializable id) {
         boolean result = super.removeById(id);
         if (result && id instanceof Integer) {
-            var keys = stringRedisTemplate.keys(RedisConstant.GOODS_KEY + "id:" + id + ":*");
+            // 统一使用goods:warehouse:开头的key
+            var keys = stringRedisTemplate.keys(RedisConstant.GOODS_WAREHOUSE_KEY + "id:" + id + ":*");
             if (!keys.isEmpty()) {
                 stringRedisTemplate.delete(keys);
             }
+            // 清除所有仓库商品缓存
             var warehouseKeys = stringRedisTemplate.keys(RedisConstant.GOODS_WAREHOUSE_KEY + "*");
             if (!warehouseKeys.isEmpty()) {
                 stringRedisTemplate.delete(warehouseKeys);
@@ -101,7 +108,7 @@ public boolean save(Goods entity) {
         
         // 清除相关缓存
         if (result && goods.getId() != null) {
-            var keys = stringRedisTemplate.keys(RedisConstant.GOODS_KEY + "id:" + goods.getId() + ":*");
+            var keys = stringRedisTemplate.keys(RedisConstant.GOODS_WAREHOUSE_KEY + "id:" + goods.getId() + ":*");
             if (!keys.isEmpty()) {
                 stringRedisTemplate.delete(keys);
             }
@@ -126,7 +133,7 @@ public boolean save(Goods entity) {
         
         // 清除相关缓存
         if (result && goodsDTO.getId() != null) {
-            var keys = stringRedisTemplate.keys(RedisConstant.GOODS_KEY + "id:" + goodsDTO.getId() + ":*");
+            var keys = stringRedisTemplate.keys(RedisConstant.GOODS_WAREHOUSE_KEY + "id:" + goodsDTO.getId() + ":*");
             if (!keys.isEmpty()) {
                 stringRedisTemplate.delete(keys);
             }
@@ -139,29 +146,15 @@ public boolean save(Goods entity) {
     }
 
     @Override
-    public List<Goods> findGoodsByIds(List<GoodsDTO> goodsDTOList) {
-        List<Integer> ids = goodsDTOList.stream()
-                .map(GoodsDTO::getId)
-                .toList();
-
-        Wrapper<Goods> wrapper = Wrappers
-                .<Goods>query().
-                in("id", ids)
-                .eq("status",1);
-
-        return goodsMapper.selectList(wrapper);
-    }
-
-    @Override
     public Goods findGoodsById(Integer id,List<Integer> managedWarehouseIds) {
         // 构建缓存 key
-        String cacheKey = RedisConstant.GOODS_KEY + "id:" + id + ":warehouses:" + managedWarehouseIds.toString();
+        String cacheKey = RedisConstant.GOODS_WAREHOUSE_KEY + "id:" + id + ":warehouses:" + managedWarehouseIds.toString();
         
         // 尝试从缓存获取
         String cacheValue = stringRedisTemplate.opsForValue().get(cacheKey);
         if (cacheValue != null) {
             // 缓存命中，更新过期时间
-            stringRedisTemplate.expire(cacheKey, RedisConstant.GOODS_TTL, TimeUnit.MINUTES);
+            stringRedisTemplate.expire(cacheKey, RedisConstant.GOODS_WAREHOUSE_TTL, TimeUnit.MINUTES);
             return JSONUtil.toBean(cacheValue, Goods.class);
         }
 
@@ -176,7 +169,7 @@ public boolean save(Goods entity) {
         // 存入缓存
         if (goods != null) {
             stringRedisTemplate.opsForValue().set(cacheKey, JSONUtil.toJsonStr(goods), 
-                    RedisConstant.GOODS_TTL, TimeUnit.MINUTES);
+                    RedisConstant.GOODS_WAREHOUSE_TTL, TimeUnit.MINUTES);
         }
         return goods;
     }
@@ -324,24 +317,65 @@ public boolean save(Goods entity) {
         return goodsMapper.selectList(wrapper);
     }
 
-    private List<GoodsInWarehouseVO> fillGoods(List<Warehouse> warehouses, String goodsName){
-        List<GoodsInWarehouseVO> goodsInWarehouseVOS=new ArrayList<>();
-        //把名字放入 fillGoods里搜索，判断存不存在
-        for(Warehouse warehouse:warehouses){
-            Wrapper<Goods> wrapper = Wrappers
-                    .<Goods>query()
-                    .eq("warehouse_id", warehouse.getId())
-                    .eq("status", 1)
-                    .like(goodsName != null && !goodsName.trim().isEmpty(),"name", goodsName)
-                    .orderByDesc("id");
+//    private List<GoodsInWarehouseVO> fillGoods(List<Warehouse> warehouses, String goodsName){
+//        List<GoodsInWarehouseVO> goodsInWarehouseVOS=new ArrayList<>();
+//        //把名字放入 fillGoods里搜索，判断存不存在
+//        for(Warehouse warehouse:warehouses){
+//            Wrapper<Goods> wrapper = Wrappers
+//                    .<Goods>query()
+//                    .eq("warehouse_id", warehouse.getId())
+//                    .eq("status", 1)
+//                    .like(goodsName != null && !goodsName.trim().isEmpty(),"name", goodsName)
+//                    .orderByDesc("id");
+//
+//            GoodsInWarehouseVO goodsInWarehouseVO=new GoodsInWarehouseVO();
+//            List<Goods> goodsList = goodsMapper.selectList(wrapper);
+//            BeanUtils.copyProperties(warehouse,goodsInWarehouseVO);
+//            goodsInWarehouseVO.setGoods(goodsList);
+//            goodsInWarehouseVOS.add(goodsInWarehouseVO);
+//        }
+//        return goodsInWarehouseVOS;
+//    }
 
-            GoodsInWarehouseVO goodsInWarehouseVO=new GoodsInWarehouseVO();
-            List<Goods> goodsList = goodsMapper.selectList(wrapper);
-            BeanUtils.copyProperties(warehouse,goodsInWarehouseVO);
-            goodsInWarehouseVO.setGoods(goodsList);
-            goodsInWarehouseVOS.add(goodsInWarehouseVO);
+    //todo 优化后的查询
+    private List<GoodsInWarehouseVO> fillGoods(List<Warehouse> warehouses, String goodsName) {
+        List<GoodsInWarehouseVO> goodsInWarehouseVOS = new ArrayList<>();
+
+        if (warehouses.isEmpty()) {
+            return goodsInWarehouseVOS;
         }
+
+        // 收集所有仓库ID
+        List<Integer> warehouseIds = warehouses.stream()
+                .map(Warehouse::getId)
+                .toList();
+
+        // 构造查询条件
+        QueryWrapper<Goods> queryWrapper = Wrappers.<Goods>query()
+                .in("warehouse_id", warehouseIds)
+                .eq("status", 1)
+                //由传入参数判断是否有name查询
+                .like(goodsName != null && !goodsName.trim().isEmpty(),"name", goodsName)
+                .orderByDesc("id");
+
+
+        // 批量查询所有货物
+        List<Goods> allGoods = goodsMapper.selectList(queryWrapper);
+
+        // 按仓库ID分组货物
+        Map<Integer, List<Goods>> goodsByWarehouse = allGoods.stream()
+                .collect(Collectors.groupingBy(Goods::getWarehouseId));
+
+        // 构建结果列表
+        for (Warehouse warehouse : warehouses) {
+            GoodsInWarehouseVO vo = new GoodsInWarehouseVO();
+            BeanUtils.copyProperties(warehouse, vo);
+            //首先尝试从goodsByWarehouse映射中根据仓库ID(warehouse.getId())查找对应的货物列表
+            //默认值处理: 如果找不到对应的键（即该仓库没有任何货物），则返回一个新建的空ArrayList<Goods>对象
+            vo.setGoods(goodsByWarehouse.getOrDefault(warehouse.getId(), new ArrayList<>()));
+            goodsInWarehouseVOS.add(vo);
+        }
+
         return goodsInWarehouseVOS;
     }
-
 }

@@ -16,8 +16,6 @@ public interface GoodsService extends IService<Goods> {
 
     boolean loginDeleteGoodsById(GoodsDTO goodsDTO);
 
-    List<Goods> findGoodsByIds(List<GoodsDTO> goodsDTOList);
-
     Goods findGoodsById(Integer id,List<Integer> managedWarehouseIds);
 
     List<Goods> findGoodsByNameLike(String name,List<Integer> managedWarehouseIds);

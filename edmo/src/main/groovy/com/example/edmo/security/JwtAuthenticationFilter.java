@@ -27,9 +27,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 从请求头中获取token，验证后设置到Spring Security上下文和UserContext
- */
+//从请求头中获取token，验证后设置到Spring Security上下文和UserContext
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 

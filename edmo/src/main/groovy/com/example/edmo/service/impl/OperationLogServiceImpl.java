@@ -40,7 +40,6 @@ public class OperationLogServiceImpl extends ServiceImpl<OperationLogMapper, Ope
             operationLogList.add(operationLog);
         }*/
 
-        //todo使用流
         List<OperationLog> operationLogList = goodsDTOList.stream()
                 .map(goodsDTO -> {
                     OperationLog operationLog = new OperationLog();

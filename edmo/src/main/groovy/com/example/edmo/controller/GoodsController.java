@@ -2,10 +2,8 @@ package com.example.edmo.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.edmo.annotation.AutoFillList;
-import com.example.edmo.pojo.entity.User;
-import com.example.edmo.service.Interface.OperationLogService;
 import com.example.edmo.service.Interface.WarehouseUserService;
-import com.example.edmo.security.RequireOperator;
+import com.example.edmo.annotation.RequireOperator;
 import com.example.edmo.util.Constant.CodeConstant;
 import com.example.edmo.util.Constant.GoodsConstant;
 import com.example.edmo.util.Constant.MqConstant;
@@ -105,14 +103,13 @@ public class GoodsController {
             if( warehouseService.getById( goodsDTOList.get(0).getWarehouseId() )==null)
                 throw new GoodsException(CodeConstant.goods,GoodsConstant.NULL_WAREHOUSE);
             if(!UserContext.getCurrentUser().getManagedWarehouseIds().contains( goodsDTOList.get(0).getWarehouseId() ) )
-                throw new GoodsException(CodeConstant.goods,GoodsConstant.NULL_ROLE);
+                throw new GoodsException(CodeConstant.goods,GoodsConstant.NULL_ROLE);//有操作权限，但不管理这个仓库
 
 
             List<Goods> goodsList = goodsDTOList.stream()
                     .map(Goods::new)
                     .collect(Collectors.toList());
 
-            //todo
             // 批量插入，ID会自动回填到goodsList中的每个Goods对象
             if (goodsService.saveBatch(goodsList)) {
                 for (int i = 0; i < goodsList.size(); i++) {
@@ -256,7 +253,7 @@ public class GoodsController {
     @PostMapping("/listPage")
     public Result listPage(@RequestBody PageDTO pageDTO) {
         Page<Goods> page=goodsService.findGoodsByNameLike(pageDTO,UserContext.getCurrentUser().getManagedWarehouseIds());
-        //todo 返回分页信息，包含数据列表和分页信息
+        // 返回分页信息，包含数据列表和分页信息
         Map<String, Object> result = new HashMap<>();
         result.put("records", page.getRecords());
         result.put("total", page.getTotal());

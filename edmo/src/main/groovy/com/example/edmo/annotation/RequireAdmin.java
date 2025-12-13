@@ -1,4 +1,4 @@
-package com.example.edmo.security;
+package com.example.edmo.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -10,6 +10,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RequireAdmin {
 }
+
+
+
+
 
 
 

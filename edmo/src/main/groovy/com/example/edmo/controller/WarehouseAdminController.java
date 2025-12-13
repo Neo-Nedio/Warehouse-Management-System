@@ -1,7 +1,7 @@
 package com.example.edmo.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.example.edmo.security.RequireAdmin;
+import com.example.edmo.annotation.RequireAdmin;
 import com.example.edmo.util.Constant.CodeConstant;
 import com.example.edmo.util.Constant.ValidationConstant;
 import com.example.edmo.util.Constant.WarehouseConstant;
@@ -235,7 +235,7 @@ public class WarehouseAdminController {
         List<UserHaveWarehouseVO> userHaveWarehouseVOS =new ArrayList<>();
         for(User user:users){
             List<Integer> ids= user.getManagedWarehouseIds();
-            //todo 修复：检查空列表，避免生成 id IN () 的无效SQL
+            //检查空列表，避免生成 id IN () 的无效SQL
             List<Warehouse> warehouses;
             if (ids != null && !ids.isEmpty()) {
                 warehouses = warehouseService.findWarehousesById(ids);
@@ -256,7 +256,7 @@ public class WarehouseAdminController {
         List<WarehouseHaveUserVO> warehouseHaveUserVOS =new ArrayList<>();
         for(Warehouse warehouse:warehouses){
             List<Integer> ids = warehouseUserService.findUserIdByWarehouseId(warehouse.getId());
-            //todo 修复：检查空列表，避免生成 id IN () 的无效SQL
+            //检查空列表，避免生成 id IN () 的无效SQL
             List<User> users;
             if (ids != null && !ids.isEmpty()) {
                 users = userService.findUsersByIds(ids);

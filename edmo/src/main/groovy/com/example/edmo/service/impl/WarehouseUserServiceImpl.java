@@ -18,7 +18,6 @@ public class WarehouseUserServiceImpl extends ServiceImpl<WarehouseUserMapper, W
     private WarehouseUserMapper warehouseUserMapper;
 
     //用来查找用户可以管理的仓库
-    //TODO 学习 流
     @Override
     public List<Integer> findWarehouseIdByUserId(Integer userId) {
         QueryWrapper<WarehouseAndUser> wrapper = new QueryWrapper<>();

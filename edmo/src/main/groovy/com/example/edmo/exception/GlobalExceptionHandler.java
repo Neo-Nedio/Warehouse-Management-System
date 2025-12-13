@@ -21,7 +21,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(httpStatus).body(Result.fail(e.getCode(), e.getMessage()));
     }
 
-    //todo 处理 @Valid @RequestBody 参数校验异常
+    // 处理 @Valid @RequestBody 参数校验异常
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Result> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
         String errorMessage = "参数校验失败";
@@ -31,7 +31,7 @@ public class GlobalExceptionHandler {
         log.warn("请求体参数校验异常: {}", errorMessage);
         return ResponseEntity.status(400).body(Result.fail(400, errorMessage));
     }
-
+    //处理 @Valid 下 @NotNull, @Min, @Max, @Size等参数校验异常
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Result> handleConstraintViolationException(ConstraintViolationException e) {
         String errorMessage = "参数校验失败";

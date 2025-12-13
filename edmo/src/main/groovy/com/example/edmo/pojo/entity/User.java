@@ -59,7 +59,7 @@ public class User {
     @TableField(exist = false)
     private List<Integer> managedWarehouseIds =  new ArrayList<>();
 
-    //todo开始时装配，防止出现空指针问题
+    //开始时装配，防止出现空指针问题
     public User() {
         this.managedWarehouseIds = new ArrayList<>();
     }

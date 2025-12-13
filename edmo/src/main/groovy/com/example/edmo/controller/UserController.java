@@ -4,7 +4,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.edmo.service.Interface.WarehouseUserService;
-import com.example.edmo.security.RequireAdmin;
+import com.example.edmo.annotation.RequireAdmin;
 import com.example.edmo.util.Constant.CodeConstant;
 import com.example.edmo.util.Constant.JwtConstant;
 import com.example.edmo.util.Constant.RedisConstant;
@@ -39,7 +39,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-//todo 学习redis
 //todo 添加excel导出功能
 @Tag(name = "用户管理", description = "用户相关接口，包括登录、注册、用户信息管理等")
 @Validated
@@ -102,10 +101,11 @@ public class UserController {
         String email = loginRequest.getEmail();
         int code = loginRequest.getCode();
 
-        //todo 获取验证码并检验
+       //获取验证码
         int redisCode = Optional.ofNullable(
                         stringRedisTemplate.opsForValue().get(RedisConstant.LOGIN_CODE_KEY + email)
                 )
+                //存在时：执行 map 操作，否则执行 orElseThrow
                 .map(Integer::parseInt)
                 .orElseThrow(() -> new UserException(CodeConstant.user, UserConstant.NEED_CODE));
 
