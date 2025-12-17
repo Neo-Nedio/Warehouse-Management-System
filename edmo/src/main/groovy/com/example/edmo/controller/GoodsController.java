@@ -14,9 +14,13 @@ import com.example.edmo.enumeration.OperationType;
 import com.example.edmo.exception.GoodsException;
 import com.example.edmo.pojo.DTO.PageDTO;
 import com.example.edmo.pojo.DTO.GoodsDTO;
+import com.example.edmo.pojo.VO.GoodsExportVO;
+import com.example.edmo.pojo.VO.GoodsInWarehouseVO;
 import com.example.edmo.pojo.entity.Goods;
 import com.example.edmo.service.Interface.GoodsService;
 import com.example.edmo.service.Interface.WarehouseService;
+import com.alibaba.excel.EasyExcel;
+import org.springframework.beans.BeanUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -31,11 +35,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Tag(name = "商品管理", description = "商品相关接口，包括商品的增删改查、批量操作等。所有操作都需要用户有管理对应仓库的权限，只能操作自己管理的仓库中的商品")
 @Validated
@@ -287,5 +295,42 @@ public class GoodsController {
     @PostMapping("/findGoodsByAnyCondition")
     public Result findGoodsByAnyCondition(@Valid @RequestBody GoodsDTO goodsDTO) {
         return Result.success(goodsService.findGoodsByAnyCondition(goodsDTO,UserContext.getCurrentUser().getManagedWarehouseIds()));
+    }
+
+    @Operation(summary = "导出仓库商品Excel", description = "根据仓库ID导出该仓库下的所有商品到Excel文件")
+    @GetMapping("/export")
+    public void exportGoodsByWarehouseId(
+            @Parameter(description = "仓库ID（必须大于0）", required = true, example = "1")
+            @Positive(message = ValidationConstant.ID) @RequestParam Integer warehouseId,
+            HttpServletResponse response) throws IOException {
+        
+        // 查询仓库商品
+        GoodsInWarehouseVO warehouseGoods = goodsService.findGoodsByWarehouseId(warehouseId,
+                UserContext.getCurrentUser().getManagedWarehouseIds());
+        
+        if (warehouseGoods == null || warehouseGoods.getGoods() == null || warehouseGoods.getGoods().isEmpty()) {
+            throw new GoodsException(CodeConstant.goods, GoodsConstant.NULL_GOODS);
+        }
+        
+        // 转换为导出VO
+        List<GoodsExportVO> exportList = warehouseGoods.getGoods().stream()
+                .map(goods -> {
+                    GoodsExportVO vo = new GoodsExportVO();
+                    BeanUtils.copyProperties(goods, vo);
+                    return vo;
+                })
+                .collect(Collectors.toList());
+        
+        // 设置响应头
+        String fileName = "仓库" + warehouseId + "_商品列表_" + System.currentTimeMillis() + ".xlsx";
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setCharacterEncoding("utf-8");
+        response.setHeader("Content-disposition", 
+                "attachment;filename*=utf-8''" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
+        
+        // 写入Excel
+        EasyExcel.write(response.getOutputStream(), GoodsExportVO.class)
+                .sheet("商品列表")
+                .doWrite(exportList);
     }
 }

@@ -25,6 +25,7 @@
         <button class="btn btn-primary" @click="handleSearch">搜索</button>
         <button class="btn" @click="handleOpenAdvancedSearch">高级搜索</button>
         <button class="btn btn-success" @click="handleLoadAllManagedWarehouseGoods">查看所有管理仓库商品</button>
+        <button class="btn btn-primary" @click="handleOpenExportModal" style="margin-left: 10px">导出Excel</button>
         <button class="btn" @click="() => { currentPage = 1; loadGoods(usePagination) }">刷新</button>
         <button class="btn" @click="() => { usePagination = !usePagination; currentPage = 1; loadGoods(usePagination) }">
           {{ usePagination ? '切换为全量' : '切换为分页' }}
@@ -234,6 +235,34 @@
       </div>
     </transition>
 
+    <!-- 导出Excel模态框 -->
+    <transition name="modal">
+      <div v-if="showExportModal" class="modal-overlay" @click="showExportModal = false">
+        <div class="modal-content" @click.stop>
+          <h3>导出商品Excel</h3>
+          <transition name="fade">
+            <div class="error-message" v-if="error">{{ error }}</div>
+          </transition>
+          <div class="form-group">
+            <label>选择仓库 <span style="color: red;">*</span></label>
+            <select v-model.number="exportWarehouseId" required>
+              <option :value="0">请选择仓库</option>
+              <option v-for="warehouse in availableWarehouses" :key="warehouse.id" :value="warehouse.id">
+                {{ warehouse.name }} (ID: {{ warehouse.id }})
+              </option>
+            </select>
+            <span v-if="!exportWarehouseId || exportWarehouseId === 0" class="field-error">请选择仓库</span>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-primary" @click="handleExport" :disabled="loading || !exportWarehouseId || exportWarehouseId === 0">
+              {{ loading ? '导出中...' : '导出' }}
+            </button>
+            <button class="btn" @click="showExportModal = false">取消</button>
+        </div>
+      </div>
+      </div>
+    </transition>
+
     <!-- 批量新增模态框 -->
     <transition name="modal">
       <div v-if="showBatchModal" class="modal-overlay" @click="showBatchModal = false">
@@ -378,6 +407,7 @@ import { ref, onMounted, computed } from 'vue'
 import { goodsApi } from '@/api/goods'
 import { warehouseApi } from '@/api/warehouse'
 import { Goods, GoodsDTO, GoodsInWarehouseVO, Warehouse, PageResult } from '@/types'
+import axios from 'axios'
 
 const goods = ref<Goods[]>([])
 const loading = ref(false)
@@ -389,6 +419,8 @@ const searchType = ref<'name' | 'id' | 'warehouseId' | 'warehouseName'>('name')
 const showAdvancedSearch = ref(false)
 const showWarehouseModal = ref(false)
 const showBatchModal = ref(false)
+const showExportModal = ref(false)
+const exportWarehouseId = ref(0)
 const modifyingGoods = ref<Goods | null>(null)
 const newWarehouseId = ref(0)
 const availableWarehouses = ref<Warehouse[]>([])
@@ -872,6 +904,93 @@ const handleAdvancedSearch = async () => {
     console.error('高级搜索错误:', err)
     goods.value = []
     pageInfo.value = { current: 1, pages: 1, total: 0, size: 0 }
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleOpenExportModal = async () => {
+  // 确保仓库列表已加载
+  if (availableWarehouses.value.length === 0) {
+    await loadWarehousesForSelect()
+  }
+  exportWarehouseId.value = 0
+  showExportModal.value = true
+}
+
+const handleExport = async () => {
+  if (!exportWarehouseId.value || exportWarehouseId.value === 0) {
+    error.value = '请选择仓库'
+    return
+  }
+
+  try {
+    loading.value = true
+    error.value = ''
+
+    // 直接使用 axios 发送请求，因为需要处理 blob 响应
+    const BASE_URL = import.meta.env.MODE === 'development' ? '/api' : 'http://localhost:8080'
+    const token = localStorage.getItem('accessToken')
+    
+    const response = await axios.get(`${BASE_URL}/goods/export`, {
+      params: { warehouseId: exportWarehouseId.value },
+      responseType: 'blob',
+      headers: {
+        'token': token || ''
+      }
+    })
+    
+    // 创建下载链接
+    const blob = new Blob([response.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    })
+    
+    // 从响应头获取文件名，如果没有则使用默认名称
+    const contentDisposition = response.headers?.['content-disposition'] || ''
+    let fileName = `仓库${exportWarehouseId.value}_商品列表_${Date.now()}.xlsx`
+    
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename\*=utf-8''(.+)/)
+      if (fileNameMatch) {
+        fileName = decodeURIComponent(fileNameMatch[1])
+      } else {
+        const fileNameMatch2 = contentDisposition.match(/filename="(.+)"/)
+        if (fileNameMatch2) {
+          fileName = fileNameMatch2[1]
+        }
+      }
+    }
+    
+    // 创建下载链接并触发下载
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    
+    // 关闭模态框
+    showExportModal.value = false
+    exportWarehouseId.value = 0
+    
+    // 显示成功消息
+    alert('导出成功！')
+  } catch (err: any) {
+    // 如果是 blob 响应但返回错误，尝试解析错误信息
+    if (err.response && err.response.data instanceof Blob) {
+      try {
+        const text = await err.response.data.text()
+        const errorData = JSON.parse(text)
+        error.value = errorData.msg || '导出失败'
+      } catch {
+        error.value = '导出失败，请检查网络连接或权限'
+      }
+    } else {
+      error.value = err.message || '导出失败，请检查网络连接或权限'
+    }
+    console.error('导出错误:', err)
   } finally {
     loading.value = false
   }

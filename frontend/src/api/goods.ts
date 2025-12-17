@@ -51,4 +51,12 @@ export const goodsApi = {
   findGoodsByAnyCondition: (data: GoodsDTO) => {
     return request.post<Goods[]>('/goods/findGoodsByAnyCondition', data)
   },
+
+  // 导出仓库商品Excel
+  export: (warehouseId: number) => {
+    return request.get('/goods/export', {
+      params: { warehouseId },
+      responseType: 'blob', // 重要：指定响应类型为blob
+    })
+  },
 }
