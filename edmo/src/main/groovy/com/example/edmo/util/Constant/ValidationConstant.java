@@ -10,7 +10,6 @@ public class ValidationConstant {
     public static final String AGE_MIN = "年龄最小16岁";
     public static final String ROLE_MAX = "权限最大为3";
     public static final String ROLE_MIN = "权限最小为1";
-    public static final String CODE = "验证码为六位数";
     public static final String DESCRIPTION = "描述为4到30个字";
     public static final String PRICE = "价格必须大于0";
     public static final String number = "数量必须大于0";
