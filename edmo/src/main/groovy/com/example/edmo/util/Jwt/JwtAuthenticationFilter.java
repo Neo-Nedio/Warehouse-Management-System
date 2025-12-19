@@ -1,4 +1,4 @@
-package com.example.edmo.security;
+package com.example.edmo.util.Jwt;
 
 import cn.hutool.json.JSONUtil;
 import com.example.edmo.controller.Result;
@@ -7,8 +7,6 @@ import com.example.edmo.util.Constant.CodeConstant;
 import com.example.edmo.util.Constant.JwtConstant;
 import com.example.edmo.util.Constant.RedisConstant;
 import com.example.edmo.exception.BaseException;
-import com.example.edmo.util.Jwt.JwtUtil;
-import com.example.edmo.util.Jwt.UserContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

@@ -4,6 +4,7 @@ import com.example.edmo.pojo.DTO.GoodsDTO;
 import com.example.edmo.pojo.entity.Goods;
 import com.example.edmo.service.Interface.OperationLogService;
 import com.example.edmo.util.Constant.MqConstant;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.ExchangeTypes;
@@ -22,6 +23,10 @@ public class LogListener {
 
     @Resource
     private OperationLogService operationLogService;
+
+    @Resource
+    private ObjectMapper objectMapper;
+
 
     @RabbitListener(
             bindings = @QueueBinding(
@@ -81,8 +86,11 @@ public class LogListener {
     )
     public void modWarehouseLog(Map<String,Object> message) {
         try {
-            Goods goods = (Goods) message.get("goods");
-            GoodsDTO goodsDTO = (GoodsDTO) message.get("goodsDTO");
+            /*Goods goods = (Goods) message.get("goods");
+            GoodsDTO goodsDTO = (GoodsDTO) message.get("goodsDTO");*/
+            // Jackson反序列化Map时，对象会被转换为LinkedHashMap，需要手动转换
+            Goods goods = objectMapper.convertValue(message.get("goods"), Goods.class);
+            GoodsDTO goodsDTO = objectMapper.convertValue(message.get("goodsDTO"), GoodsDTO.class);
             operationLogService.modWarehouse(goods, goodsDTO);
         } catch (Exception e) {
             log.error("处理修改商品仓库日志失败，消息内容: {}, 错误信息: {}", message, e.getMessage(), e);
@@ -99,8 +107,11 @@ public class LogListener {
     )
     public void deleteLog(Map<String,Object> message) {
         try {
-            Goods goods = (Goods) message.get("goods");
-            GoodsDTO goodsDTO = (GoodsDTO) message.get("goodsDTO");
+            /*Goods goods = (Goods) message.get("goods");
+            GoodsDTO goodsDTO = (GoodsDTO) message.get("goodsDTO");*/
+            // Jackson反序列化Map时，对象会被转换为LinkedHashMap，需要手动转换
+            Goods goods = objectMapper.convertValue(message.get("goods"), Goods.class);
+            GoodsDTO goodsDTO = objectMapper.convertValue(message.get("goodsDTO"), GoodsDTO.class);
             operationLogService.delete(goods, goodsDTO);
         } catch (Exception e) {
             log.error("处理删除商品日志失败，消息内容: {}, 错误信息: {}", message, e.getMessage(), e);

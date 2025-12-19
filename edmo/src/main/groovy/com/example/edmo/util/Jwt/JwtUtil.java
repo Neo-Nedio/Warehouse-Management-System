@@ -20,16 +20,17 @@ public class JwtUtil {
     public static String createToken(User user,Integer expire) {
         Algorithm algorithm = Algorithm.HMAC256(JwtConstant.SECRET_KEY);
         Calendar calendar = Calendar.getInstance();
-        Date now = calendar.getTime();
         calendar.add(Calendar.SECOND, expire);
+        Date now = calendar.getTime();
 
+        //token包括头部（包括算法），载荷（包括过期时间），签名（密钥经过算法处理后的结果）
         return JWT.create()
                 .withClaim("id", user.getId())
                 .withClaim("name", user.getName())
                 .withClaim("roleId",user.getRoleId())
                 .withClaim("managedWarehouseIds", user.getManagedWarehouseIds())
-                .withExpiresAt(calendar.getTime())
-                .withIssuedAt(now)
+                .withExpiresAt(calendar.getTime())  // 过期时间
+                .withIssuedAt(now)                  // 签发时间
                 .sign(algorithm);
     }
 

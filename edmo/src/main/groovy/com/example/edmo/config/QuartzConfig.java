@@ -14,7 +14,7 @@ public class QuartzConfig {
     public JobDetail weeklyReportJobDetail() {
         return JobBuilder.newJob(WeeklyReportJob.class)  // 指定执行哪个Job类
                 .withIdentity("weeklyReportJob", "reportGroup")  // 任务唯一标识(名称, 分组)
-                .storeDurably()  // 即使没有触发器也保留任务定义
+                .storeDurably()  // 必须设置为durable，即使有Trigger也需要（Spring Boot初始化顺序问题）
                 .build();
     }
 
@@ -29,4 +29,5 @@ public class QuartzConfig {
                 .build();
     }
 }
+
 
