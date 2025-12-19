@@ -19,9 +19,15 @@ public class JwtUtil {
      */
     public static String createToken(User user,Integer expire) {
         Algorithm algorithm = Algorithm.HMAC256(JwtConstant.SECRET_KEY);
+
+        // 获取当前时间作为签发时间
+        Date now = new Date();
+
+        // 计算过期时间：当前时间 + expire秒
         Calendar calendar = Calendar.getInstance();
+        calendar.setTime(now);
         calendar.add(Calendar.SECOND, expire);
-        Date now = calendar.getTime();
+        Date expirationTime = calendar.getTime();
 
         //token包括头部（包括算法），载荷（包括过期时间），签名（密钥经过算法处理后的结果）
         return JWT.create()
@@ -29,8 +35,8 @@ public class JwtUtil {
                 .withClaim("name", user.getName())
                 .withClaim("roleId",user.getRoleId())
                 .withClaim("managedWarehouseIds", user.getManagedWarehouseIds())
-                .withExpiresAt(calendar.getTime())  // 过期时间
-                .withIssuedAt(now)                  // 签发时间
+                .withExpiresAt(expirationTime)  // 过期时间
+                .withIssuedAt(now)             // 签发时间
                 .sign(algorithm);
     }
 
